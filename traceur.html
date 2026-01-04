@@ -214,6 +214,10 @@
             background-color: var(--warning-color);
         }
         
+        .action-btn.info {
+            background-color: var(--info-color);
+        }
+        
         .location-info {
             display: flex;
             align-items: center;
@@ -1671,13 +1675,21 @@
                 </div>
             </div>
             
-            <!-- Export -->
+            <!-- Export/Import -->
             <div class="tool-group">
                 <div class="tool-group-title">
-                    <i class="fas fa-download"></i>
-                    <span>Export</span>
+                    <i class="fas fa-file-import"></i>
+                    <span>Fichiers</span>
                 </div>
                 <div class="tool-buttons">
+                    <button class="tool-btn" id="import-json">
+                        <i class="fas fa-file-import"></i>
+                        Importer JSON
+                    </button>
+                    <button class="tool-btn" id="export-json">
+                        <i class="fas fa-file-export"></i>
+                        Exporter JSON
+                    </button>
                     <button class="tool-btn" id="export-kml">
                         <i class="fas fa-file-code"></i>
                         KML
@@ -1732,6 +1744,9 @@
                     </select>
                     <button class="action-btn secondary" id="export-map">
                         <i class="fas fa-download"></i>
+                    </button>
+                    <button class="action-btn info" id="import-data-btn">
+                        <i class="fas fa-file-import"></i>
                     </button>
                     <button class="action-btn" id="toggle-layers">
                         <i class="fas fa-layer-group"></i>
@@ -2336,6 +2351,7 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script>
         // =================== VARIABLES GLOBALES ===================
         let map;
@@ -3439,6 +3455,92 @@
             showNotification("Positions exportées en JSON", "success");
         }
         
+        // =================== IMPORT/EXPORT JSON ===================
+        
+        function importJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        
+                        // Vérifier la structure des données
+                        if (!data || typeof data !== 'object') {
+                            showNotification("Format JSON invalide", "error");
+                            return;
+                        }
+                        
+                        let importedCount = 0;
+                        
+                        // Importer les positions si elles existent
+                        if (data.positions && Array.isArray(data.positions)) {
+                            data.positions.forEach(item => {
+                                if (item.lat && item.lng) {
+                                    saveTrackedPosition(item.lat, item.lng, item.name || "Importé");
+                                    
+                                    // Ajouter un marqueur
+                                    const marker = L.marker([item.lat, item.lng]).addTo(markersCluster);
+                                    marker.bindPopup(`<strong>${item.name || "Position importée"}</strong><br>${item.lat.toFixed(4)}, ${item.lng.toFixed(4)}`);
+                                    
+                                    importedCount++;
+                                }
+                            });
+                        }
+                        
+                        // Importer les dessins si ils existent
+                        if (data.drawings && Array.isArray(data.drawings)) {
+                            // Ici, vous pourriez ajouter la logique pour importer des dessins
+                            showNotification("Import des dessins non encore implémenté", "info");
+                        }
+                        
+                        showNotification(`${importedCount} positions importées avec succès`, "success");
+                        
+                        // Recharger la liste des positions
+                        loadTrackedPositions();
+                        
+                    } catch (error) {
+                        showNotification("Erreur lors de la lecture du fichier JSON", "error");
+                        console.error(error);
+                    }
+                };
+                
+                reader.readAsText(file);
+            };
+            
+            input.click();
+        }
+        
+        function exportJSON() {
+            // Créer un objet avec toutes les données
+            const exportData = {
+                positions: trackedPositions,
+                metadata: {
+                    exportedFrom: "GeoHISTORY Pro",
+                    exportDate: new Date().toISOString(),
+                    version: "1.0"
+                }
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `geoHistory_data_${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification("Données exportées en JSON", "success");
+        }
+        
         // =================== EXPORT ===================
         
         function exportKML() {
@@ -3447,7 +3549,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
 <Document>
     <name>GeoHISTORY Positions</name>
-    <description>Positions exportées depuis GeoHISTORY Pro</name>`;
+    <description>Positions exportées depuis GeoHISTORY Pro</description>`;
             
             trackedPositions.forEach(pos => {
                 kmlContent += `
@@ -3507,8 +3609,7 @@
         }
         
         function exportPDF() {
-            showNotification("Export PDF généré et téléchargé", "success");
-            // Note: Pour un vrai export PDF, utiliser une bibliothèque comme jsPDF
+            showNotification("Export PDF - Utilisez l'export d'image pour le moment", "info");
         }
         
         function exportImage() {
@@ -3518,6 +3619,9 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 showNotification("Carte exportée en image", "success");
+            }).catch(error => {
+                showNotification("Erreur lors de l'export d'image", "error");
+                console.error(error);
             });
         }
         
@@ -3528,6 +3632,9 @@
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 showNotification("Carte exportée en image", "success");
+            }).catch(error => {
+                showNotification("Erreur lors de l'export d'image", "error");
+                console.error(error);
             });
         }
         
@@ -3692,6 +3799,11 @@
             document.getElementById('show-legend').addEventListener('click', showLegend);
             document.getElementById('view-positions').addEventListener('click', showPositionsPanel);
             
+            // Import/Export JSON
+            document.getElementById('import-json').addEventListener('click', importJSON);
+            document.getElementById('export-json').addEventListener('click', exportJSON);
+            document.getElementById('import-data-btn').addEventListener('click', importJSON);
+            
             // Export
             document.getElementById('export-kml').addEventListener('click', exportKML);
             document.getElementById('export-geojson').addEventListener('click', exportGeoJSON);
@@ -3843,7 +3955,9 @@
             });
             
             // Notification de démarrage
-            showNotification("GeoHISTORY Pro initialisé. Tous les boutons sont fonctionnels !", "success");
+            setTimeout(() => {
+                showNotification("GeoHISTORY Pro initialisé. Tous les boutons sont fonctionnels !", "success");
+            }, 1000);
         });
     </script>
 </body>
