@@ -1361,23 +1361,28 @@
         let isShowingMyPosition = false;
         let isFullscreen = false;
         
-        // Configuration GPS améliorée
+        // Configuration GPS OPTIMISÉE
         const GPS_CONFIG = {
-            highAccuracy: true,
-            maximumAge: 1000, // Réduit pour des données plus fraîches
-            timeout: 15000, // Timeout augmenté pour éviter les erreurs précoces
-            enableHighAccuracy: true,
-            maxHistory: 500,
-            autoCenterZoom: 16,
-            positionUpdateInterval: 1000,
-            minDistance: 5, // Distance minimale réduite pour un suivi plus fluide
+            highAccuracy: true,          // Haute précision activée
+            maximumAge: 5000,            // 5 secondes max pour données en cache
+            timeout: 10000,              // 10 secondes de timeout (optimisé)
+            enableHighAccuracy: true,    // Forcer haute précision
+            maxHistory: 1000,            // Historique augmenté
+            autoCenterZoom: 16,          // Zoom pour centrage automatique
+            positionUpdateInterval: 1000, // Intervalle de mise à jour
+            minDistance: 3,              // Distance minimale réduite pour suivi fluide
             whatsappPhone: "+22892871605",
-            fallbackMode: false, // Mode dégradé en cas de GPS indisponible
-            useIPLocation: false, // Utiliser la localisation par IP en dernier recours
-            cachePosition: true, // Mettre en cache la dernière position connue
-            retryAttempts: 3, // Nombre de tentatives de reconnexion
+            fallbackMode: false,         // Mode dégradé
+            useIPLocation: true,         // Utiliser la localisation par IP
+            cachePosition: true,         // Mettre en cache la position
+            retryAttempts: 5,            // Tentatives de reconnexion
             satelliteCount: 0,
-            gpsSignalQuality: "unknown"
+            gpsSignalQuality: "unknown",
+            maxAccuracyThreshold: 100,   // Seuil de précision max en mètres
+            minAccuracyThreshold: 5,     // Seuil de précision min
+            accuracyFilter: true,        // Filtrer les positions trop imprécises
+            driftCorrection: true,       // Correction de dérive GPS
+            smoothing: true              // Lissage des positions
         };
         
         // Variables de contrôle GPS
@@ -1388,27 +1393,39 @@
         let isGpsAvailable = false;
         let isGpsInitialized = false;
         let fallbackPosition = null;
+        let gpsWatchActive = false;
+        let positionQueue = [];          // File d'attente pour lissage
+        let lastValidAccuracy = null;
         
         // =================== INITIALISATION ===================
         
         function initMilitaryMap() {
-            console.log("Initialisation de la carte militaire...");
+            console.log("🚀 Initialisation de la carte militaire...");
             
             // Créer la carte avec vue sur le Togo
             map = L.map('map', {
                 crs: L.CRS.EPSG3857,
                 minZoom: 2,
-                maxZoom: 19,
+                maxZoom: 20,
                 zoomControl: false,
                 preferCanvas: true,
-                attributionControl: false
+                attributionControl: false,
+                maxBounds: [[-90, -180], [90, 180]], // Limites mondiales
+                maxBoundsViscosity: 1.0
             }).setView([8.6195, 0.8248], 8);
             
             // Ajouter la couche OpenStreetMap
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
-                attribution: '© OpenStreetMap'
+                attribution: '© OpenStreetMap',
+                detectRetina: true
             }).addTo(map);
+            
+            // Ajouter une couche satellite optionnelle
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: '© Esri'
+            });
             
             // Ajouter le groupe pour les éléments dessinés
             drawnItems.addTo(map);
@@ -1421,22 +1438,34 @@
                 defaultMarkGeocode: false,
                 position: 'topleft',
                 placeholder: 'Rechercher une adresse...',
-                collapsed: true
+                collapsed: true,
+                geocoder: L.Control.Geocoder.nominatim()
+            }).addTo(map);
+            
+            // Ajouter un contrôle de zoom
+            L.control.zoom({
+                position: 'topleft'
             }).addTo(map);
             
             // Configurer les événements de la carte
             setupMapEvents();
             
             // Vérifier la disponibilité du GPS
-            checkGPSAvailability();
-            
-            // Démarrer le suivi GPS automatique avec gestion d'erreur
-            startAutoGPSWithRetry();
+            checkGPSAvailability().then(() => {
+                // Démarrer le suivi GPS automatique avec gestion d'erreur
+                startAutoGPS();
+                
+                // Charger la position en cache si disponible
+                loadCachedPosition();
+            }).catch(error => {
+                console.error("Erreur d'initialisation GPS:", error);
+                startFallbackMode();
+            });
             
             // Mettre à jour l'interface
             updateStatusDisplay();
             
-            showNotification("Système cartographique militaire initialisé", "gps");
+            showNotification("✅ Système cartographique militaire initialisé", "gps");
             
             // Démarrer la mise à jour en temps réel
             startInterfaceUpdates();
@@ -1444,56 +1473,87 @@
             // Charger les positions sauvegardées
             loadSavedPositions();
             
-            console.log("Carte initialisée avec succès");
+            console.log("✅ Carte initialisée avec succès");
         }
         
-        function checkGPSAvailability() {
-            console.log("Vérification de la disponibilité du GPS...");
+        async function checkGPSAvailability() {
+            console.log("📡 Vérification de la disponibilité du GPS...");
             
+            // Vérifier si l'API géolocation est disponible
             if (!navigator.geolocation) {
-                console.warn("Geolocation API non supportée par le navigateur");
-                showNotification("Votre navigateur ne supporte pas la géolocalisation", "warning");
+                console.warn("❌ Geolocation API non supportée par le navigateur");
+                showNotification("⚠️ Votre navigateur ne supporte pas la géolocalisation", "warning");
                 isGpsAvailable = false;
-                return false;
+                return Promise.reject("Geolocation API not supported");
             }
             
-            // Tester la permission
-            if (navigator.permissions && navigator.permissions.query) {
-                navigator.permissions.query({ name: 'geolocation' })
-                    .then((permissionStatus) => {
-                        isGpsAvailable = permissionStatus.state !== 'denied';
-                        
-                        if (permissionStatus.state === 'granted') {
-                            console.log("Permission GPS accordée");
-                            document.getElementById('gps-status').textContent = "GPS: PRÊT";
-                        } else if (permissionStatus.state === 'prompt') {
-                            console.log("Permission GPS en attente");
-                            document.getElementById('gps-status').textContent = "GPS: ATTENTE PERMISSION";
-                        } else {
-                            console.warn("Permission GPS refusée");
-                            document.getElementById('gps-status').textContent = "GPS: PERMISSION REFUSÉE";
-                            showNotification("Permission GPS refusée. Veuillez l'autoriser dans les paramètres.", "warning");
-                        }
-                        
-                        permissionStatus.onchange = function() {
-                            console.log("Statut de permission changé:", this.state);
-                            checkGPSAvailability();
-                        };
-                    })
-                    .catch(error => {
-                        console.error("Erreur lors de la vérification de permission:", error);
+            // Tester la permission et la disponibilité
+            return new Promise((resolve, reject) => {
+                const testOptions = {
+                    enableHighAccuracy: false,
+                    timeout: 5000,
+                    maximumAge: Infinity
+                };
+                
+                // Tester la géolocalisation
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        console.log("✅ GPS fonctionnel, position obtenue:", position.coords);
+                        isGpsAvailable = true;
+                        isGpsInitialized = true;
+                        document.getElementById('gps-status').textContent = "GPS: PRÊT";
+                        resolve(position);
+                    },
+                    (error) => {
+                        console.warn("⚠️ GPS test échoué:", error.message);
                         isGpsAvailable = false;
-                    });
-            } else {
-                // Fallback pour les navigateurs qui ne supportent pas permissions API
-                isGpsAvailable = true;
-            }
-            
-            return isGpsAvailable;
+                        
+                        // Vérifier les permissions si disponible
+                        if (navigator.permissions && navigator.permissions.query) {
+                            navigator.permissions.query({ name: 'geolocation' })
+                                .then((permissionStatus) => {
+                                    console.log("📋 Statut permission:", permissionStatus.state);
+                                    
+                                    if (permissionStatus.state === 'granted') {
+                                        isGpsAvailable = true;
+                                        document.getElementById('gps-status').textContent = "GPS: ATTENTE SIGNAL";
+                                        showNotification("GPS prêt, en attente de signal...", "gps");
+                                        resolve(null);
+                                    } else if (permissionStatus.state === 'prompt') {
+                                        document.getElementById('gps-status').textContent = "GPS: DEMANDE PERMISSION";
+                                        showNotification("Veuillez autoriser l'accès à votre position", "gps");
+                                    } else {
+                                        document.getElementById('gps-status').textContent = "GPS: PERMISSION REFUSÉE";
+                                        showNotification("Permission GPS refusée. Activez-la dans les paramètres.", "warning");
+                                    }
+                                    
+                                    permissionStatus.onchange = function() {
+                                        console.log("🔄 Statut permission changé:", this.state);
+                                        checkGPSAvailability();
+                                    };
+                                    
+                                    reject(error);
+                                })
+                                .catch(() => {
+                                    // Fallback pour navigateurs sans support permissions API
+                                    isGpsAvailable = true;
+                                    document.getElementById('gps-status').textContent = "GPS: PRÊT";
+                                    resolve(null);
+                                });
+                        } else {
+                            // Fallback pour anciens navigateurs
+                            isGpsAvailable = true;
+                            document.getElementById('gps-status').textContent = "GPS: PRÊT";
+                            resolve(null);
+                        }
+                    },
+                    testOptions
+                );
+            });
         }
         
         function initDrawControls() {
-            console.log("Initialisation des outils de dessin...");
+            console.log("🎨 Initialisation des outils de dessin...");
             
             // Initialiser les outils de dessin
             drawControl = new L.Control.Draw({
@@ -1554,11 +1614,11 @@
                 }
             });
             
-            console.log("Outils de dessin initialisés");
+            console.log("✅ Outils de dessin initialisés");
         }
         
         function setupMapEvents() {
-            console.log("Configuration des événements de la carte...");
+            console.log("🔧 Configuration des événements de la carte...");
             
             // Suivi de la souris pour afficher les coordonnées
             map.on('mousemove', function(e) {
@@ -1621,146 +1681,451 @@
                 showNotification("Élément supprimé", "gps");
             });
             
-            console.log("Événements de carte configurés");
+            console.log("✅ Événements de carte configurés");
         }
         
-        // =================== FONCTIONS GPS AMÉLIORÉES ===================
+        // =================== SYSTÈME GPS OPTIMISÉ ===================
         
-        function startAutoGPSWithRetry() {
-            console.log("Démarrage du suivi GPS avec système de reconnexion...");
+        function startAutoGPS() {
+            console.log("📍 Démarrage du suivi GPS...");
+            
+            // Arrêter tout suivi existant
+            stopGPSWatch();
             
             if (!isGpsAvailable) {
-                console.warn("GPS non disponible, tentative de fallback...");
+                console.warn("⚠️ GPS non disponible, activation du mode dégradé");
                 startFallbackMode();
                 return;
             }
             
-            // Arrêter tout suivi existant
-            if (positionWatchId && navigator.geolocation) {
-                navigator.geolocation.clearWatch(positionWatchId);
-                positionWatchId = null;
-            }
-            
-            // Réinitialiser le compteur d'erreurs
-            gpsRetryCount = 0;
-            gpsErrorCount = 0;
-            
-            // Configuration GPS optimisée
+            // Configuration GPS optimisée pour chaque navigateur
             const gpsOptions = {
                 enableHighAccuracy: GPS_CONFIG.highAccuracy,
-                maximumAge: GPS_CONFIG.maximumAge,
-                timeout: GPS_CONFIG.timeout
+                timeout: GPS_CONFIG.timeout,
+                maximumAge: GPS_CONFIG.maximumAge
             };
             
-            // Démarrer le suivi avec gestion d'erreur
+            console.log("🔧 Configuration GPS:", gpsOptions);
+            
             try {
+                // Démarrer le suivi continu
                 positionWatchId = navigator.geolocation.watchPosition(
-                    handlePositionUpdate,
-                    handleGPSPositionError,
+                    handlePositionSuccess,
+                    handleGPSError,
                     gpsOptions
                 );
                 
-                console.log("Suivi GPS démarré avec ID:", positionWatchId);
+                gpsWatchActive = true;
+                gpsRetryCount = 0;
+                
+                console.log("✅ Suivi GPS démarré avec ID:", positionWatchId);
+                
+                // Mettre à jour l'interface
                 document.getElementById('auto-gps').classList.add('active');
                 document.getElementById('location-status').classList.add('active');
-                showNotification("Suivi GPS haute précision activé", "gps");
-                isGpsInitialized = true;
                 
-                // Tester la récupération de position immédiate
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        console.log("Test GPS réussi:", pos.coords);
-                        handlePositionUpdate(pos);
-                    },
-                    (err) => {
-                        console.warn("Test GPS échoué:", err);
-                        handleGPSPositionError(err);
-                    },
-                    gpsOptions
-                );
+                showNotification("📡 Suivi GPS haute précision activé", "gps");
+                
+                // Tester immédiatement pour obtenir une première position
+                setTimeout(() => {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            console.log("✅ Première position obtenue:", pos.coords);
+                            handlePositionSuccess(pos);
+                        },
+                        (err) => {
+                            console.warn("⚠️ Première position échouée:", err.message);
+                        },
+                        gpsOptions
+                    );
+                }, 1000);
                 
             } catch (error) {
-                console.error("Erreur lors du démarrage du GPS:", error);
-                handleGPSPositionError(error);
+                console.error("❌ Erreur lors du démarrage du GPS:", error);
+                handleGPSError(error);
             }
         }
         
-        function handleGPSPositionError(error) {
+        function handlePositionSuccess(position) {
+            // Réinitialiser le compteur d'erreurs
+            gpsErrorCount = 0;
+            gpsLastSuccess = new Date();
+            
+            const coords = position.coords;
+            const timestamp = new Date(position.timestamp);
+            
+            console.log(`📍 Position reçue: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`);
+            console.log(`   Précision: ${coords.accuracy ? coords.accuracy.toFixed(0) : 'N/A'}m`);
+            console.log(`   Vitesse: ${coords.speed ? (coords.speed * 3.6).toFixed(1) : '0'} km/h`);
+            
+            // Vérifier la qualité de la position
+            if (GPS_CONFIG.accuracyFilter && coords.accuracy) {
+                if (coords.accuracy > GPS_CONFIG.maxAccuracyThreshold) {
+                    console.warn(`⚠️ Position rejetée (précision trop faible: ${coords.accuracy}m)`);
+                    showNotification(`Précision faible (${coords.accuracy}m)`, "warning");
+                    return;
+                }
+                
+                // Enregistrer la dernière précision valide
+                if (!lastValidAccuracy || coords.accuracy < lastValidAccuracy) {
+                    lastValidAccuracy = coords.accuracy;
+                }
+            }
+            
+            // Calculer la qualité du signal GPS
+            calculateGPSSignalQuality(coords);
+            
+            // Lissage des positions si activé
+            let processedPosition = coords;
+            if (GPS_CONFIG.smoothing) {
+                processedPosition = smoothPosition(coords);
+            }
+            
+            // Correction de dérive si activée
+            if (GPS_CONFIG.driftCorrection && lastPosition) {
+                processedPosition = correctDrift(processedPosition, lastPosition);
+            }
+            
+            // Créer l'objet position
+            const newPosition = {
+                lat: processedPosition.latitude,
+                lng: processedPosition.longitude,
+                accuracy: processedPosition.accuracy || coords.accuracy,
+                speed: processedPosition.speed || coords.speed || 0,
+                altitude: processedPosition.altitude || coords.altitude || 0,
+                heading: processedPosition.heading || coords.heading || 0,
+                timestamp: timestamp,
+                satelliteCount: GPS_CONFIG.satelliteCount,
+                signalQuality: GPS_CONFIG.gpsSignalQuality,
+                source: 'gps'
+            };
+            
+            // Vérifier si le point est suffisamment éloigné du précédent
+            let shouldRecord = true;
+            if (lastPosition) {
+                const distance = calculateDistance(
+                    lastPosition.lat, lastPosition.lng,
+                    newPosition.lat, newPosition.lng
+                );
+                
+                // Enregistrer si mouvement significatif ou précision améliorée
+                shouldRecord = distance >= GPS_CONFIG.minDistance || 
+                              (coords.accuracy && lastPosition.accuracy && 
+                               coords.accuracy < lastPosition.accuracy * 0.8);
+            }
+            
+            if (shouldRecord) {
+                // Mettre à jour la dernière position
+                lastPosition = newPosition;
+                
+                // Mettre à jour l'affichage
+                updatePositionDisplay(newPosition);
+                
+                // Mettre à jour la carte
+                updateMapPosition(newPosition);
+                
+                // Mettre à jour l'historique
+                updatePositionHistory(newPosition);
+                
+                // Si le suivi automatique est activé, centrer la carte
+                if (autoCenterEnabled && autoTrackingEnabled) {
+                    map.setView([newPosition.lat, newPosition.lng], GPS_CONFIG.autoCenterZoom);
+                }
+                
+                // Mettre à jour la distance totale parcourue
+                updateTotalDistance();
+                
+                // Sauvegarder en cache
+                if (GPS_CONFIG.cachePosition) {
+                    cachePosition(newPosition);
+                }
+                
+                // Auto-partage WhatsApp
+                if (autoWhatsAppEnabled) {
+                    autoSharePosition();
+                }
+            }
+        }
+        
+        function smoothPosition(coords) {
+            // Ajouter à la file d'attente
+            positionQueue.push({
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                accuracy: coords.accuracy,
+                timestamp: Date.now()
+            });
+            
+            // Garder seulement les 5 dernières positions
+            if (positionQueue.length > 5) {
+                positionQueue.shift();
+            }
+            
+            // Si moins de 3 points, retourner le dernier
+            if (positionQueue.length < 3) {
+                return coords;
+            }
+            
+            // Calculer la moyenne pondérée
+            let totalWeight = 0;
+            let latSum = 0;
+            let lngSum = 0;
+            let accuracySum = 0;
+            
+            for (let i = 0; i < positionQueue.length; i++) {
+                const weight = (i + 1) / positionQueue.length; // Plus de poids aux positions récentes
+                totalWeight += weight;
+                
+                latSum += positionQueue[i].latitude * weight;
+                lngSum += positionQueue[i].longitude * weight;
+                
+                if (positionQueue[i].accuracy) {
+                    accuracySum += positionQueue[i].accuracy * weight;
+                }
+            }
+            
+            return {
+                latitude: latSum / totalWeight,
+                longitude: lngSum / totalWeight,
+                accuracy: accuracySum / totalWeight,
+                speed: coords.speed,
+                altitude: coords.altitude,
+                heading: coords.heading
+            };
+        }
+        
+        function correctDrift(currentCoords, lastPosition) {
+            // Correction simple de dérive GPS
+            const MAX_DRIFT_DISTANCE = 100; // mètres
+            const MAX_DRIFT_SPEED = 200; // km/h (vitesse maximale réaliste)
+            
+            if (!lastPosition) return currentCoords;
+            
+            const distance = calculateDistance(
+                lastPosition.lat, lastPosition.lng,
+                currentCoords.latitude, currentCoords.longitude
+            ) * 1000; // Convertir en mètres
+            
+            const timeDiff = (new Date() - lastPosition.timestamp) / 1000; // secondes
+            const speed = (distance / timeDiff) * 3.6; // km/h
+            
+            // Si la vitesse calculée est irréaliste, on suspecte une dérive
+            if (speed > MAX_DRIFT_SPEED && distance > MAX_DRIFT_DISTANCE) {
+                console.warn(`⚠️ Dérive GPS détectée: vitesse ${speed.toFixed(0)} km/h`);
+                
+                // Utiliser une interpolation entre l'ancienne et nouvelle position
+                const correctionFactor = 0.3; // 30% de la nouvelle position
+                
+                return {
+                    latitude: lastPosition.lat * (1 - correctionFactor) + currentCoords.latitude * correctionFactor,
+                    longitude: lastPosition.lng * (1 - correctionFactor) + currentCoords.longitude * correctionFactor,
+                    accuracy: Math.max(currentCoords.accuracy || 50, lastPosition.accuracy || 50),
+                    speed: currentCoords.speed,
+                    altitude: currentCoords.altitude,
+                    heading: currentCoords.heading
+                };
+            }
+            
+            return currentCoords;
+        }
+        
+        function handleGPSError(error) {
             gpsErrorCount++;
             const now = new Date();
             
-            console.error(`Erreur GPS #${gpsErrorCount}:`, error);
+            console.error(`❌ Erreur GPS #${gpsErrorCount}:`, error.message || error);
             
             let message = "";
-            let showAlert = gpsErrorCount <= 3; // Afficher l'alerte seulement pour les 3 premières erreurs
+            let errorCode = error.code || 0;
             
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    message = "Permission GPS refusée. Veuillez autoriser la localisation dans les paramètres de votre navigateur.";
+            switch(errorCode) {
+                case 1: // PERMISSION_DENIED
+                    message = "Permission GPS refusée. Veuillez autoriser l'accès à votre position dans les paramètres de votre navigateur.";
                     isGpsAvailable = false;
-                    startFallbackMode();
+                    showNotification(message, "warning");
                     break;
-                case error.POSITION_UNAVAILABLE:
-                    message = "Position non disponible. Vérifiez que le GPS est activé sur votre appareil.";
-                    // Tentative de récupération de la dernière position connue
-                    if (lastPosition) {
-                        message += " Utilisation de la dernière position connue.";
-                        useLastKnownPosition();
-                    }
-                    break;
-                case error.TIMEOUT:
-                    message = "Délai de localisation dépassé. Vérifiez votre connexion réseau.";
+                    
+                case 2: // POSITION_UNAVAILABLE
+                    message = "Position non disponible. Vérifiez que le GPS est activé sur votre appareil et que vous êtes en extérieur.";
+                    
+                    // Essayer une configuration plus permissive
                     if (gpsRetryCount < GPS_CONFIG.retryAttempts) {
-                        message += " Nouvelle tentative...";
                         gpsRetryCount++;
-                        setTimeout(startAutoGPSWithRetry, 2000);
+                        message += ` Tentative ${gpsRetryCount}/${GPS_CONFIG.retryAttempts}...`;
+                        
+                        setTimeout(() => {
+                            console.log(`🔄 Tentative de reconnexion ${gpsRetryCount}...`);
+                            startAutoGPS();
+                        }, 2000 * gpsRetryCount); // Attente exponentielle
+                    } else {
+                        message += " Activation du mode dégradé.";
+                        startFallbackMode();
                     }
                     break;
+                    
+                case 3: // TIMEOUT
+                    message = "Délai de localisation dépassé. Vérifiez votre connexion internet.";
+                    
+                    // Réduire la précision pour la prochaine tentative
+                    if (gpsRetryCount < GPS_CONFIG.retryAttempts) {
+                        gpsRetryCount++;
+                        message += ` Nouvelle tentative (${gpsRetryCount}/${GPS_CONFIG.retryAttempts})...`;
+                        
+                        setTimeout(() => {
+                            console.log(`🔄 Nouvelle tentative avec timeout augmenté...`);
+                            startAutoGPS();
+                        }, 3000);
+                    }
+                    break;
+                    
                 default:
-                    message = "Erreur inconnue du GPS. Code: " + error.code;
+                    message = "Erreur inconnue du GPS. Code: " + errorCode;
             }
             
             // Mettre à jour l'affichage
-            document.getElementById('gps-status').textContent = `GPS: ERREUR (${gpsErrorCount})`;
-            document.getElementById('system-status-text').textContent = message;
-            document.getElementById('location-status').classList.remove('active', 'tracking', 'position');
-            document.getElementById('location-status').classList.add('gps');
+            updateGPSErrorDisplay(message, errorCode);
             
-            if (showAlert) {
+            // Afficher la notification seulement pour les premières erreurs
+            if (gpsErrorCount <= 3) {
                 showNotification(message, "warning");
             }
             
             // Si trop d'erreurs, basculer en mode dégradé
-            if (gpsErrorCount >= 5) {
-                console.warn("Trop d'erreurs GPS, activation du mode dégradé");
+            if (gpsErrorCount >= 10) {
+                console.warn("🚨 Trop d'erreurs GPS, activation du mode dégradé");
                 startFallbackMode();
             }
         }
         
-        function startFallbackMode() {
-            console.log("Démarrage du mode dégradé (sans GPS)...");
-            GPS_CONFIG.fallbackMode = true;
+        function updateGPSErrorDisplay(message, errorCode) {
+            const errorStatus = document.getElementById('gps-status');
+            const systemStatus = document.getElementById('system-status-text');
             
-            showNotification("Mode dégradé activé - Utilisation des données réseau", "warning");
+            let statusText = "GPS: ERREUR";
+            if (errorCode === 1) statusText = "GPS: PERMISSION REFUSÉE";
+            else if (errorCode === 2) statusText = "GPS: POSITION INDISPONIBLE";
+            else if (errorCode === 3) statusText = "GPS: TIMEOUT";
+            
+            errorStatus.textContent = statusText;
+            systemStatus.textContent = message.substring(0, 100) + "...";
+            
+            document.getElementById('location-status').classList.remove('active', 'tracking', 'position');
+            document.getElementById('location-status').classList.add('gps');
+        }
+        
+        function stopGPSWatch() {
+            if (positionWatchId && navigator.geolocation) {
+                navigator.geolocation.clearWatch(positionWatchId);
+                positionWatchId = null;
+                gpsWatchActive = false;
+                console.log("⏹️ Surveillance GPS arrêtée");
+            }
+        }
+        
+        function calculateGPSSignalQuality(coords) {
+            if (!coords.accuracy) {
+                GPS_CONFIG.gpsSignalQuality = "unknown";
+                gpsSignalStrength = 0;
+                return;
+            }
+            
+            let quality = "excellent";
+            let strength = 100;
+            
+            const accuracy = coords.accuracy;
+            
+            if (accuracy < 10) {
+                quality = "excellent";
+                strength = 100;
+            } else if (accuracy < 20) {
+                quality = "good";
+                strength = 80;
+            } else if (accuracy < 50) {
+                quality = "medium";
+                strength = 60;
+            } else if (accuracy < 100) {
+                quality = "poor";
+                strength = 40;
+            } else {
+                quality = "very poor";
+                strength = 20;
+            }
+            
+            // Ajuster en fonction de la vitesse (si en mouvement)
+            if (coords.speed && coords.speed > 2) {
+                strength = Math.max(30, strength - 10);
+            }
+            
+            GPS_CONFIG.gpsSignalQuality = quality;
+            gpsSignalStrength = strength;
+            
+            updateSignalDisplay();
+        }
+        
+        function updateSignalDisplay() {
+            const signalElement = document.getElementById('gps-status');
+            if (!signalElement) return;
+            
+            let signalText = "";
+            let signalIcon = "📡";
+            
+            if (gpsSignalStrength >= 80) {
+                signalText = "EXCELLENT";
+                signalIcon = "📡";
+            } else if (gpsSignalStrength >= 60) {
+                signalText = "BON";
+                signalIcon = "📡";
+            } else if (gpsSignalStrength >= 40) {
+                signalText = "MOYEN";
+                signalIcon = "📡";
+            } else if (gpsSignalStrength >= 20) {
+                signalText = "FAIBLE";
+                signalIcon = "📡";
+            } else if (gpsSignalStrength > 0) {
+                signalText = "TRÈS FAIBLE";
+                signalIcon = "📡";
+            } else {
+                signalText = "PAS DE SIGNAL";
+                signalIcon = "📵";
+            }
+            
+            if (lastPosition && lastPosition.accuracy) {
+                signalElement.innerHTML = `${signalIcon} ${signalText} (±${lastPosition.accuracy.toFixed(0)}m)`;
+            } else {
+                signalElement.innerHTML = `${signalIcon} ${signalText}`;
+            }
+        }
+        
+        function startFallbackMode() {
+            console.log("🔄 Activation du mode dégradé...");
+            
+            GPS_CONFIG.fallbackMode = true;
+            stopGPSWatch();
+            
+            showNotification("Mode dégradé activé - Utilisation des données disponibles", "warning");
             
             // Essayer la localisation par IP
             if (GPS_CONFIG.useIPLocation) {
                 getIPLocation();
             }
             
-            // Utiliser la dernière position connue si disponible
-            if (lastPosition) {
-                useLastKnownPosition();
+            // Utiliser la position en cache si disponible
+            const cachedPos = getCachedPosition();
+            if (cachedPos) {
+                console.log("📍 Utilisation de la position en cache");
+                updatePositionDisplay(cachedPos);
+                updateMapPosition(cachedPos);
             } else {
                 // Position par défaut (Togo)
                 fallbackPosition = {
                     lat: 8.6195,
                     lng: 0.8248,
-                    accuracy: 50000, // Grande précision pour le mode dégradé
+                    accuracy: 50000,
                     speed: 0,
                     altitude: 0,
                     heading: 0,
-                    timestamp: new Date()
+                    timestamp: new Date(),
+                    source: 'fallback'
                 };
                 
                 updatePositionDisplay(fallbackPosition);
@@ -1769,194 +2134,93 @@
         }
         
         function getIPLocation() {
-            console.log("Tentative de localisation par IP...");
+            console.log("🌐 Tentative de localisation par IP...");
             
-            // Utiliser un service de géolocalisation par IP gratuit
-            fetch('https://ipapi.co/json/')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.latitude && data.longitude) {
-                        console.log("Localisation IP obtenue:", data);
-                        
-                        const ipPosition = {
-                            lat: data.latitude,
-                            lng: data.longitude,
-                            accuracy: 5000, // Précision moyenne pour IP
-                            speed: 0,
-                            altitude: 0,
-                            heading: 0,
-                            timestamp: new Date(),
-                            source: 'IP'
-                        };
-                        
-                        fallbackPosition = ipPosition;
-                        updatePositionDisplay(ipPosition);
-                        updateMapPosition(ipPosition);
-                        
-                        showNotification(`Localisation estimée par IP: ${data.city}, ${data.country_name}`, "gps");
-                    }
-                })
-                .catch(error => {
-                    console.error("Erreur de localisation IP:", error);
-                });
-        }
-        
-        function useLastKnownPosition() {
-            if (lastPosition) {
-                console.log("Utilisation de la dernière position connue");
-                
-                // Mettre à jour le timestamp
-                lastPosition.timestamp = new Date();
-                
-                updatePositionDisplay(lastPosition);
-                updateMapPosition(lastPosition);
-                
-                showNotification("Utilisation de la dernière position connue", "gps");
-            }
-        }
-        
-        function handlePositionUpdate(position) {
-            // Réinitialiser le compteur d'erreurs en cas de succès
-            gpsErrorCount = 0;
-            gpsLastSuccess = new Date();
+            // Essayer plusieurs services de géolocalisation IP
+            const ipServices = [
+                'https://ipapi.co/json/',
+                'https://ipinfo.io/json',
+                'https://freegeoip.app/json/'
+            ];
             
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy || 100;
-            const speed = position.coords.speed || 0;
-            const altitude = position.coords.altitude || 0;
-            const heading = position.coords.heading || 0;
-            const timestamp = new Date(position.timestamp);
-            
-            console.log(`Mise à jour position: ${lat.toFixed(6)}, ${lng.toFixed(6)}, précision: ${accuracy}m, vitesse: ${speed}m/s`);
-            
-            // Calculer la qualité du signal GPS
-            calculateGPSSignalQuality(position);
-            
-            // Vérifier si le point est suffisamment éloigné du précédent
-            let shouldRecord = true;
-            if (lastPosition) {
-                const distance = calculateDistance(
-                    lastPosition.lat, lastPosition.lng,
-                    lat, lng
-                );
-                shouldRecord = distance >= GPS_CONFIG.minDistance || Math.abs(speed) > 0.5;
-            }
-            
-            if (shouldRecord) {
-                // Mettre à jour la dernière position
-                lastPosition = {
-                    lat, lng, accuracy, speed, altitude, heading, timestamp,
-                    satelliteCount: GPS_CONFIG.satelliteCount,
-                    signalQuality: GPS_CONFIG.gpsSignalQuality
-                };
-                
-                // Mettre à jour l'affichage
-                updatePositionDisplay(lastPosition);
-                
-                // Mettre à jour la carte
-                updateMapPosition(lastPosition);
-                
-                // Mettre à jour l'historique
-                updatePositionHistory(lastPosition);
-                
-                // Si le suivi automatique est activé, centrer la carte
-                if (autoCenterEnabled && autoTrackingEnabled) {
-                    map.setView([lat, lng], GPS_CONFIG.autoCenterZoom);
+            const tryService = (index) => {
+                if (index >= ipServices.length) {
+                    console.warn("❌ Tous les services IP ont échoué");
+                    return;
                 }
                 
-                // Mettre à jour la distance totale parcourue
-                updateTotalDistance();
-                
-                // Auto-partage WhatsApp
-                if (autoWhatsAppEnabled) {
-                    autoSharePosition();
-                }
-                
-                // Sauvegarder en cache
-                if (GPS_CONFIG.cachePosition) {
-                    cachePosition(lastPosition);
-                }
-            }
-        }
-        
-        function calculateGPSSignalQuality(position) {
-            // Estimation de la qualité du signal basée sur la précision
-            let quality = "excellent";
-            let strength = 100;
+                fetch(ipServices[index])
+                    .then(response => {
+                        if (!response.ok) throw new Error('Service non disponible');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.latitude && data.longitude) {
+                            console.log("✅ Localisation IP obtenue:", data);
+                            
+                            const ipPosition = {
+                                lat: parseFloat(data.latitude),
+                                lng: parseFloat(data.longitude),
+                                accuracy: 5000, // Précision moyenne pour IP
+                                speed: 0,
+                                altitude: 0,
+                                heading: 0,
+                                timestamp: new Date(),
+                                source: 'ip',
+                                city: data.city,
+                                country: data.country_name
+                            };
+                            
+                            fallbackPosition = ipPosition;
+                            updatePositionDisplay(ipPosition);
+                            updateMapPosition(ipPosition);
+                            
+                            showNotification(`📍 Position estimée: ${data.city || ''} ${data.country_name || ''}`, "gps");
+                        } else {
+                            throw new Error('Données incomplètes');
+                        }
+                    })
+                    .catch(error => {
+                        console.warn(`⚠️ Service IP ${index + 1} échoué:`, error.message);
+                        // Essayer le service suivant
+                        setTimeout(() => tryService(index + 1), 1000);
+                    });
+            };
             
-            if (position.coords.accuracy) {
-                if (position.coords.accuracy < 10) {
-                    quality = "excellent";
-                    strength = 100;
-                } else if (position.coords.accuracy < 50) {
-                    quality = "good";
-                    strength = 80;
-                } else if (position.coords.accuracy < 100) {
-                    quality = "medium";
-                    strength = 60;
-                } else if (position.coords.accuracy < 500) {
-                    quality = "poor";
-                    strength = 40;
-                } else {
-                    quality = "very poor";
-                    strength = 20;
-                }
-            }
-            
-            GPS_CONFIG.gpsSignalQuality = quality;
-            gpsSignalStrength = strength;
-            
-            // Mettre à jour l'affichage du signal
-            updateSignalDisplay();
-        }
-        
-        function updateSignalDisplay() {
-            const signalElement = document.getElementById('gps-status');
-            if (signalElement) {
-                let signalText = "";
-                let signalClass = "";
-                
-                if (gpsSignalStrength >= 80) {
-                    signalText = "📡 EXCELLENT";
-                    signalClass = "gps";
-                } else if (gpsSignalStrength >= 60) {
-                    signalText = "📡 BON";
-                    signalClass = "gps";
-                } else if (gpsSignalStrength >= 40) {
-                    signalText = "📡 MOYEN";
-                    signalClass = "gps";
-                } else if (gpsSignalStrength >= 20) {
-                    signalText = "📡 FAIBLE";
-                    signalClass = "gps";
-                } else {
-                    signalText = "📡 TRÈS FAIBLE";
-                    signalClass = "warning";
-                }
-                
-                if (lastPosition && lastPosition.accuracy) {
-                    signalText += ` ±${lastPosition.accuracy.toFixed(0)}m`;
-                }
-                
-                signalElement.textContent = signalText;
-            }
+            tryService(0);
         }
         
         function cachePosition(position) {
             try {
-                localStorage.setItem('lastCachedPosition', JSON.stringify({
+                const cacheData = {
                     lat: position.lat,
                     lng: position.lng,
                     accuracy: position.accuracy,
-                    timestamp: position.timestamp.toISOString()
-                }));
+                    timestamp: position.timestamp.toISOString(),
+                    source: position.source || 'gps'
+                };
+                
+                localStorage.setItem('lastCachedPosition', JSON.stringify(cacheData));
+                localStorage.setItem('positionCacheTime', Date.now().toString());
+                
+                console.log("💾 Position mise en cache");
             } catch (e) {
-                console.warn("Impossible de sauvegarder la position en cache:", e);
+                console.warn("⚠️ Impossible de sauvegarder la position en cache:", e);
             }
         }
         
         function getCachedPosition() {
             try {
+                const cacheTime = localStorage.getItem('positionCacheTime');
+                if (cacheTime) {
+                    const age = Date.now() - parseInt(cacheTime);
+                    // Ne pas utiliser le cache si trop vieux (30 minutes)
+                    if (age > 30 * 60 * 1000) {
+                        console.log("🗑️ Cache trop vieux, ignoré");
+                        return null;
+                    }
+                }
+                
                 const cached = localStorage.getItem('lastCachedPosition');
                 if (cached) {
                     const data = JSON.parse(cached);
@@ -1964,19 +2228,32 @@
                         lat: data.lat,
                         lng: data.lng,
                         accuracy: data.accuracy,
-                        timestamp: new Date(data.timestamp)
+                        speed: 0,
+                        altitude: 0,
+                        heading: 0,
+                        timestamp: new Date(data.timestamp),
+                        source: data.source || 'cache'
                     };
                 }
             } catch (e) {
-                console.warn("Impossible de lire la position en cache:", e);
+                console.warn("⚠️ Impossible de lire la position en cache:", e);
             }
             return null;
+        }
+        
+        function loadCachedPosition() {
+            const cached = getCachedPosition();
+            if (cached) {
+                console.log("📂 Position en cache chargée");
+                lastPosition = cached;
+                updateMapPosition(cached);
+            }
         }
         
         // =================== FONCTIONS DE LOCALISATION ===================
         
         function findMyPosition() {
-            console.log("Recherche de la position...");
+            console.log("🔍 Recherche de la position...");
             
             if (!navigator.geolocation) {
                 showNotification("Géolocalisation non supportée par votre navigateur", "warning");
@@ -1985,22 +2262,22 @@
             
             showNotification("Recherche de votre position en cours...", "position");
             
-            // Options optimisées pour la recherche de position
+            // Options optimisées pour la recherche unique
             const options = {
                 enableHighAccuracy: true,
-                timeout: 20000, // 20 secondes de timeout
-                maximumAge: 0 // Pas de cache
+                timeout: 15000,
+                maximumAge: 0
             };
             
             navigator.geolocation.getCurrentPosition(
                 function(position) {
-                    console.log("Position trouvée:", position.coords);
+                    console.log("✅ Position trouvée:", position.coords);
                     updateMyPosition(position);
                     centerOnMyPosition();
-                    showNotification("Position trouvée avec succès !", "position");
+                    showNotification("✅ Position trouvée avec succès !", "position");
                 },
                 function(error) {
-                    console.error("Erreur de géolocalisation:", error);
+                    console.error("❌ Erreur de géolocalisation:", error);
                     handlePositionError(error);
                 },
                 options
@@ -2016,7 +2293,7 @@
             const heading = position.coords.heading || 0;
             const timestamp = new Date(position.timestamp);
             
-            console.log(`Mise à jour position: ${lat}, ${lng}, précision: ${accuracy}m`);
+            console.log(`📍 Mise à jour position: ${lat}, ${lng}, précision: ${accuracy}m`);
             
             // Mettre à jour le marqueur de position
             updateMyPositionMarker(lat, lng, accuracy, speed, heading);
@@ -2303,15 +2580,15 @@
             
             drawnItems.addLayer(savedMarker);
             
-            showNotification("Position sauvegardée avec succès", "position");
+            showNotification("✅ Position sauvegardée avec succès", "position");
         }
         
         function savePositionsToStorage() {
             try {
                 localStorage.setItem('savedPositions', JSON.stringify(savedPositions));
-                console.log("Positions sauvegardées dans le stockage local");
+                console.log("💾 Positions sauvegardées dans le stockage local");
             } catch (e) {
-                console.error("Erreur lors de la sauvegarde des positions:", e);
+                console.error("❌ Erreur lors de la sauvegarde des positions:", e);
             }
         }
         
@@ -2320,11 +2597,11 @@
                 const saved = localStorage.getItem('savedPositions');
                 if (saved) {
                     savedPositions = JSON.parse(saved);
-                    console.log(`${savedPositions.length} positions chargées du stockage local`);
+                    console.log(`📂 ${savedPositions.length} positions chargées du stockage local`);
                     showNotification(`${savedPositions.length} positions chargées`, "position");
                 }
             } catch (e) {
-                console.error("Erreur lors du chargement des positions:", e);
+                console.error("❌ Erreur lors du chargement des positions:", e);
             }
         }
         
@@ -2879,7 +3156,7 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 `GPS: ${accuracyText} | ${speedText}`;
             
             document.getElementById('system-status-text').textContent = 
-                `GPS ACTIF | ${accuracyText} | ${speedText} | Distance: ${totalDistance.toFixed(2)} km`;
+                `GPS ${gpsWatchActive ? 'ACTIF' : 'INACTIF'} | ${accuracyText} | ${speedText} | Distance: ${totalDistance.toFixed(2)} km`;
             
             document.getElementById('coordinates').textContent = 
                 `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`;
@@ -3053,13 +3330,13 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 "";
             
             const status = `
-                <div style="padding: 15px; min-width: 300px;">
+                <div style="padding: 15px; min-width: 350px;">
                     <h3 style="color: #006400; margin-bottom: 15px;">
-                        <i class="fas fa-heartbeat"></i> ÉTAT DU SYSTÈME
+                        <i class="fas fa-heartbeat"></i> ÉTAT DU SYSTÈME GPS
                     </h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; font-size: 0.9rem;">
                         <div>
-                            <strong>GPS:</strong> ${positionWatchId ? '🟢 ACTIF' : '🔴 INACTIF'}
+                            <strong>GPS:</strong> ${gpsWatchActive ? '🟢 ACTIF' : '🔴 INACTIF'}
                         </div>
                         <div>
                             <strong>Signal:</strong> ${GPS_CONFIG.gpsSignalQuality.toUpperCase()}
@@ -3068,28 +3345,54 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                             <strong>Suivi auto:</strong> ${autoTrackingEnabled ? '🟢 ON' : '🔴 OFF'}
                         </div>
                         <div>
-                            <strong>WhatsApp auto:</strong> ${autoWhatsAppEnabled ? '🟢 ON' : '🔴 OFF'}
-                        </div>
-                        <div>
-                            <strong>Mode mesure:</strong> ${isMeasuring ? '🟢 ACTIF' : '🔴 INACTIF'}
-                        </div>
-                        <div>
-                            <strong>Mode dessin:</strong> ${isDrawing ? '🟢 ACTIF' : '🔴 INACTIF'}
+                            <strong>Précision:</strong> ${lastPosition && lastPosition.accuracy ? lastPosition.accuracy.toFixed(0) + 'm' : 'N/A'}
                         </div>
                         <div>
                             <strong>Mode dégradé:</strong> ${GPS_CONFIG.fallbackMode ? '🟢 ACTIF' : '🔴 INACTIF'}
                         </div>
                         <div>
-                            <strong>Plein écran:</strong> ${isFullscreen ? '🟢 ACTIF' : '🔴 INACTIF'}
+                            <strong>Erreurs:</strong> ${gpsErrorCount}
+                        </div>
+                        <div>
+                            <strong>Force signal:</strong> ${gpsSignalStrength}%
+                        </div>
+                        <div>
+                            <strong>Tentatives:</strong> ${gpsRetryCount}/${GPS_CONFIG.retryAttempts}
                         </div>
                     </div>
-                    <div style="background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                    <div style="background: #f5f5f5; padding: 10px; border-radius: 5px; font-size: 0.85rem;">
                         <div><strong>Dernière position:</strong> ${lastPosition ? lastPosition.timestamp.toLocaleTimeString() : 'Jamais'}${cachedText}</div>
+                        <div><strong>Source:</strong> ${lastPosition ? lastPosition.source || 'GPS' : 'N/A'}</div>
                         <div><strong>Distance parcourue:</strong> ${totalDistance.toFixed(2)} km</div>
                         <div><strong>Points historiques:</strong> ${positionHistory.length}</div>
                         <div><strong>Positions sauvegardées:</strong> ${savedPositions.length}</div>
-                        <div><strong>Erreurs GPS:</strong> ${gpsErrorCount}</div>
-                        <div><strong>Force signal:</strong> ${gpsSignalStrength}%</div>
+                        <div><strong>Précision min:</strong> ${lastValidAccuracy ? lastValidAccuracy.toFixed(0) + 'm' : 'N/A'}</div>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 8px;">
+                        <button onclick="startAutoGPS()" style="
+                            flex: 1;
+                            background: #0066FF;
+                            color: white;
+                            border: none;
+                            padding: 8px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            <i class="fas fa-redo"></i> Redémarrer GPS
+                        </button>
+                        <button onclick="startFallbackMode()" style="
+                            flex: 1;
+                            background: #FF5722;
+                            color: white;
+                            border: none;
+                            padding: 8px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            <i class="fas fa-wifi"></i> Mode dégradé
+                        </button>
                     </div>
                 </div>
             `;
@@ -3110,7 +3413,9 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 gpsStats: {
                     errorCount: gpsErrorCount,
                     signalStrength: gpsSignalStrength,
-                    fallbackMode: GPS_CONFIG.fallbackMode
+                    fallbackMode: GPS_CONFIG.fallbackMode,
+                    retryCount: gpsRetryCount,
+                    watchActive: gpsWatchActive
                 }
             };
             
@@ -3154,17 +3459,25 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                     const age = new Date() - lastPosition.timestamp;
                     const ageSeconds = Math.floor(age / 1000);
                     
-                    if (ageSeconds > 30) {
+                    if (ageSeconds > 30 && gpsWatchActive) {
                         document.getElementById('gps-status').textContent = "GPS: DERNIÈRE POSITION";
                     }
-                }
-                
-                // Vérifier l'état du GPS périodiquement
-                if (gpsErrorCount > 0 && !GPS_CONFIG.fallbackMode) {
-                    const lastErrorAge = gpsLastSuccess ? (new Date() - gpsLastSuccess) / 1000 : Infinity;
-                    if (lastErrorAge > 60) { // 1 minute sans succès
-                        console.log("Tentative de récupération GPS...");
-                        startAutoGPSWithRetry();
+                    
+                    // Si pas de position depuis plus d'une minute, vérifier l'état
+                    if (ageSeconds > 60 && gpsWatchActive) {
+                        console.log("⚠️ Pas de position depuis 1 minute, vérification GPS...");
+                        // Tester rapidement le GPS
+                        navigator.geolocation.getCurrentPosition(
+                            (pos) => {
+                                console.log("✅ GPS toujours fonctionnel");
+                                handlePositionSuccess(pos);
+                            },
+                            (err) => {
+                                console.warn("⚠️ GPS test échoué:", err.message);
+                                handleGPSError(err);
+                            },
+                            { timeout: 5000, maximumAge: 0 }
+                        );
                     }
                 }
             }, 5000);
@@ -3216,7 +3529,7 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
         // =================== ÉVÉNEMENTS ===================
         
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Document chargé, initialisation en cours...");
+            console.log("📄 Document chargé, initialisation en cours...");
             
             // Initialiser la carte
             initMilitaryMap();
@@ -3243,7 +3556,7 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             });
             
             // =================== GPS ET SUIVI ===================
-            document.getElementById('auto-gps').addEventListener('click', startAutoGPSWithRetry);
+            document.getElementById('auto-gps').addEventListener('click', startAutoGPS);
             document.getElementById('live-tracking').addEventListener('click', toggleAutoTracking);
             document.getElementById('tracking-toggle').addEventListener('click', toggleAutoTracking);
             
@@ -3358,6 +3671,7 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             document.getElementById('system-status').addEventListener('click', showSystemStatus);
             document.getElementById('reset-system').addEventListener('click', function() {
                 if (confirm("Voulez-vous vraiment réinitialiser le système ? Toutes les données seront perdues.")) {
+                    localStorage.clear();
                     location.reload();
                 }
             });
@@ -3372,7 +3686,7 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                         showNotification("Mode position activé", "position");
                         break;
                     case 'gps':
-                        startAutoGPSWithRetry();
+                        startAutoGPS();
                         showNotification("Mode GPS activé", "gps");
                         break;
                     case 'tracking':
@@ -3434,17 +3748,15 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             
             // Initialisation terminée
             setTimeout(() => {
-                showNotification("Système de suivi GPS prêt. Cliquez sur 'Localiser Moi' pour trouver votre position.", "gps");
-                console.log("Initialisation terminée avec succès");
+                showNotification("✅ Système de suivi GPS prêt. Cliquez sur 'Localiser Moi' pour trouver votre position.", "gps");
+                console.log("✅ Initialisation terminée avec succès");
             }, 2000);
         });
         
         // Nettoyage à la fermeture
         window.addEventListener('beforeunload', function() {
-            if (positionWatchId && navigator.geolocation) {
-                navigator.geolocation.clearWatch(positionWatchId);
-                console.log("Surveillance GPS arrêtée");
-            }
+            stopGPSWatch();
+            console.log("🔄 Nettoyage avant fermeture");
         });
     </script>
 </body>
