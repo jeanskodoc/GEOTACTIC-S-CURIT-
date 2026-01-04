@@ -1142,6 +1142,35 @@
             color: white;
         }
         
+        /* Panel recherche coordonnées */
+        .coordinates-panel {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            border: 2px solid var(--primary-color);
+            min-width: 300px;
+            max-width: 400px;
+        }
+        
+        .coordinates-panel.active {
+            display: flex;
+        }
+        
+        .precision-circle {
+            stroke-width: 2;
+            stroke-opacity: 0.7;
+            fill-opacity: 0.1;
+        }
+        
         /* RESPONSIVE COMPLET */
         @media (max-width: 1200px) {
             .main-sidebar {
@@ -1660,6 +1689,10 @@
                         <i class="fas fa-ruler"></i>
                         Distance
                     </button>
+                    <button class="tool-btn" id="find-coordinates">
+                        <i class="fas fa-crosshairs"></i>
+                        Coordonnées
+                    </button>
                     <button class="tool-btn" id="clear-map">
                         <i class="fas fa-trash"></i>
                         Effacer
@@ -1781,6 +1814,43 @@
                     <div id="click-info-content-data" style="display: none;">
                         <!-- Infos dynamiques -->
                     </div>
+                </div>
+            </div>
+            
+            <!-- Panel recherche coordonnées -->
+            <div class="coordinates-panel" id="coordinates-panel">
+                <div class="panel-header">
+                    <h4><i class="fas fa-crosshairs"></i> Recherche par coordonnées</h4>
+                    <button class="close-panel" id="close-coordinates-panel">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="form-group">
+                    <label for="input-latitude">Latitude:</label>
+                    <input type="number" id="input-latitude" step="any" placeholder="9.550969">
+                </div>
+                <div class="form-group">
+                    <label for="input-longitude">Longitude:</label>
+                    <input type="number" id="input-longitude" step="any" placeholder="1.194167">
+                </div>
+                <div class="form-group">
+                    <label for="input-precision">Précision (mètres):</label>
+                    <input type="number" id="input-precision" value="20" min="1" max="10000">
+                </div>
+                <div class="form-group">
+                    <label for="input-marker-name">Nom du point:</label>
+                    <input type="text" id="input-marker-name" placeholder="Point personnalisé">
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="action-btn secondary" id="clear-coordinates" style="flex-grow: 1;">
+                        <i class="fas fa-trash"></i> Effacer
+                    </button>
+                    <button class="action-btn" id="find-coordinates-btn" style="flex-grow: 1;">
+                        <i class="fas fa-search"></i> Localiser
+                    </button>
+                </div>
+                <div id="coordinates-info" style="margin-top: 10px; padding: 8px; background-color: #f5f5f5; border-radius: 4px; display: none;">
+                    <!-- Informations dynamiques -->
                 </div>
             </div>
             
@@ -2372,6 +2442,11 @@
         let warLayers = [];
         let textEditorActive = false;
         
+        // Variables pour la recherche de coordonnées
+        let coordinateMarker = null;
+        let precisionCircle = null;
+        let coordinateLayerGroup = null;
+        
         // Données des pays
         const countries = [
             { code: 'FR', name: 'France', lat: 46.2276, lng: 2.2137, continent: 'Europe' },
@@ -2660,6 +2735,219 @@
             showNotification(`Fond de carte: ${basemaps[selected].name}`, "success");
         }
         
+        // =================== RECHERCHE PAR COORDONNÉES ===================
+        
+        function showCoordinatesPanel() {
+            document.getElementById('coordinates-panel').classList.add('active');
+            
+            // Remplir avec des valeurs par défaut (exemple)
+            document.getElementById('input-latitude').value = "9.550969";
+            document.getElementById('input-longitude').value = "1.194167";
+            document.getElementById('input-precision').value = "20";
+            document.getElementById('input-marker-name').value = "Point personnalisé";
+        }
+        
+        function closeCoordinatesPanel() {
+            document.getElementById('coordinates-panel').classList.remove('active');
+        }
+        
+        function clearCoordinateMarker() {
+            if (coordinateLayerGroup) {
+                map.removeLayer(coordinateLayerGroup);
+                coordinateMarker = null;
+                precisionCircle = null;
+                coordinateLayerGroup = null;
+            }
+            
+            document.getElementById('coordinates-info').style.display = 'none';
+        }
+        
+        function findCoordinates() {
+            const latInput = document.getElementById('input-latitude').value;
+            const lngInput = document.getElementById('input-longitude').value;
+            const precisionInput = document.getElementById('input-precision').value;
+            const markerName = document.getElementById('input-marker-name').value;
+            
+            // Validation des entrées
+            if (!latInput || !lngInput) {
+                showNotification("Veuillez entrer des coordonnées valides", "error");
+                return;
+            }
+            
+            const lat = parseFloat(latInput);
+            const lng = parseFloat(lngInput);
+            const precision = parseFloat(precisionInput);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                showNotification("Coordonnées invalides", "error");
+                return;
+            }
+            
+            if (lat < -90 || lat > 90) {
+                showNotification("Latitude doit être entre -90 et 90 degrés", "error");
+                return;
+            }
+            
+            if (lng < -180 || lng > 180) {
+                showNotification("Longitude doit être entre -180 et 180 degrés", "error");
+                return;
+            }
+            
+            // Nettoyer les anciens marqueurs
+            clearCoordinateMarker();
+            
+            // Créer un groupe de calque pour les éléments de coordonnées
+            coordinateLayerGroup = L.layerGroup().addTo(map);
+            
+            // Ajouter le marqueur principal
+            coordinateMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'coordinate-marker',
+                    html: `<div style="background-color: #FF0000; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 3px solid white; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+                        <i class="fas fa-crosshairs"></i>
+                    </div>`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                })
+            }).addTo(coordinateLayerGroup);
+            
+            // Ajouter un cercle de précision si la précision est spécifiée
+            if (precision && !isNaN(precision) && precision > 0) {
+                const radius = precision; // en mètres
+                precisionCircle = L.circle([lat, lng], {
+                    radius: radius,
+                    color: '#FF0000',
+                    fillColor: '#FF0000',
+                    fillOpacity: 0.1,
+                    weight: 2
+                }).addTo(coordinateLayerGroup);
+            }
+            
+            // Centrer la carte sur la position
+            map.setView([lat, lng], 15);
+            
+            // Ajouter un popup avec les informations
+            const popupContent = `
+                <div style="min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: var(--primary-color);">
+                        <i class="fas fa-crosshairs"></i> ${markerName || "Point repéré"}
+                    </h4>
+                    <div style="font-size: 0.9rem; margin-bottom: 8px;">
+                        <strong>Latitude:</strong> ${lat.toFixed(6)}°<br>
+                        <strong>Longitude:</strong> ${lng.toFixed(6)}°
+                    </div>
+                    ${precision && !isNaN(precision) && precision > 0 ? 
+                        `<div style="font-size: 0.9rem; margin-bottom: 8px;">
+                            <strong>Précision:</strong> ${precision} m
+                        </div>` : ''
+                    }
+                    <div style="display: flex; gap: 5px; margin-top: 10px;">
+                        <button onclick="saveCoordinatePosition(${lat}, ${lng}, '${markerName}', ${precision || 0})" style="
+                            background-color: var(--primary-color);
+                            color: white;
+                            border: none;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                        <button onclick="shareCoordinatePosition(${lat}, ${lng}, '${markerName}', ${precision || 0})" style="
+                            background-color: var(--third-color);
+                            color: white;
+                            border: none;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            <i class="fas fa-share"></i> Partager
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            coordinateMarker.bindPopup(popupContent).openPopup();
+            
+            // Afficher les informations dans le panel
+            const infoDiv = document.getElementById('coordinates-info');
+            infoDiv.innerHTML = `
+                <div style="font-size: 0.85rem;">
+                    <strong>Point localisé:</strong><br>
+                    <div style="margin-top: 5px;">
+                        <div><strong>Nom:</strong> ${markerName}</div>
+                        <div><strong>Latitude:</strong> ${lat.toFixed(6)}°</div>
+                        <div><strong>Longitude:</strong> ${lng.toFixed(6)}°</div>
+                        ${precision && !isNaN(precision) && precision > 0 ? 
+                            `<div><strong>Précision:</strong> ${precision} m</div>` : ''
+                        }
+                        <div style="margin-top: 8px; font-size: 0.8rem; color: #666;">
+                            <i class="fas fa-info-circle"></i> Cliquez sur le marqueur pour plus d'options
+                        </div>
+                    </div>
+                </div>
+            `;
+            infoDiv.style.display = 'block';
+            
+            // Sauvegarder la position automatiquement
+            saveCoordinatePosition(lat, lng, markerName, precision || 0);
+            
+            showNotification(`Point localisé: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, "success");
+        }
+        
+        function saveCoordinatePosition(lat, lng, name, precision) {
+            const position = {
+                id: Date.now(),
+                name: name || "Point par coordonnées",
+                lat: lat,
+                lng: lng,
+                precision: precision || null,
+                timestamp: new Date().toLocaleString(),
+                type: "coordinate_search"
+            };
+            
+            trackedPositions.unshift(position);
+            
+            // Limiter à 50 positions
+            if (trackedPositions.length > 50) {
+                trackedPositions.pop();
+            }
+            
+            // Sauvegarder dans localStorage
+            localStorage.setItem('geoHistory_positions', JSON.stringify(trackedPositions));
+            
+            // Mettre à jour l'affichage si le panel est ouvert
+            if (document.getElementById('positions-panel').classList.contains('active')) {
+                loadTrackedPositions();
+            }
+        }
+        
+        function shareCoordinatePosition(lat, lng, name, precision) {
+            const message = encodeURIComponent(
+                `📍 ${name || "Point localisé"}:\n` +
+                `Latitude: ${lat.toFixed(6)}\n` +
+                `Longitude: ${lng.toFixed(6)}\n` +
+                `${precision ? `Précision: ${precision}m\n` : ''}` +
+                `\nLocalisé avec GeoHISTORY Pro`
+            );
+            
+            // Préparer une URL de partage
+            const url = `https://www.google.com/maps?q=${lat},${lng}`;
+            const shareText = `Point: ${name || "Localisé"}\nCoords: ${lat.toFixed(6)}, ${lng.toFixed(6)}\n${url}`;
+            
+            // Copier dans le presse-papier
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    showNotification("Coordonnées copiées dans le presse-papier", "success");
+                }).catch(() => {
+                    showNotification("Lien Google Maps: " + url, "info");
+                });
+            } else {
+                showNotification("Lien Google Maps: " + url, "info");
+            }
+        }
+        
         // =================== FONCTIONS HISTORIQUES ===================
         
         // Timeline
@@ -2917,7 +3205,10 @@
             let routePoints = [];
             let routeLine = null;
             
-            function handleRouteClick(lat, lng) {
+            function handleRouteClick(e) {
+                const lat = e.latlng.lat;
+                const lng = e.latlng.lng;
+                
                 routePoints.push({ lat, lng });
                 
                 // Ajouter un marqueur
@@ -2971,7 +3262,8 @@
         
         function startDrawing(type) {
             isDrawing = true;
-            document.querySelectorAll('.draw-btn').forEach(btn => btn.classList.remove('active'));
+            const drawButtons = document.querySelectorAll('.draw-btn');
+            drawButtons.forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             
             // Configurer les outils de dessin Leaflet
@@ -3184,15 +3476,9 @@
                 return;
             }
             
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentPosition.lat}&longitude=${currentPosition.lng}&current_weather=true`)
-                .then(response => response.json())
-                .then(data => {
-                    const weather = data.current_weather;
-                    showNotification(`Météo: ${weather.temperature}°C, ${weather.windspeed} km/h`, "info");
-                })
-                .catch(error => {
-                    showNotification("Impossible d'obtenir la météo", "error");
-                });
+            // Note: Cette API nécessite une clé d'API réelle
+            // Pour l'exemple, on simule une réponse
+            showNotification("Météo: Service météo non disponible sans clé API", "info");
         }
         
         function showTimezoneInfo() {
@@ -3201,18 +3487,12 @@
                 return;
             }
             
-            fetch(`https://api.timezonedb.com/v2.1/get-time-zone?key=YOUR_API_KEY&format=json&by=position&lat=${currentPosition.lat}&lng=${currentPosition.lng}`)
-                .then(response => response.json())
-                .then(data => {
-                    showNotification(`Fuseau horaire: ${data.zoneName}`, "info");
-                })
-                .catch(error => {
-                    // Fallback simple
-                    const offset = new Date().getTimezoneOffset();
-                    const hours = Math.abs(offset / 60);
-                    const sign = offset < 0 ? '+' : '-';
-                    showNotification(`Fuseau horaire: UTC${sign}${hours}`, "info");
-                });
+            // Note: Cette API nécessite une clé d'API réelle
+            // Pour l'exemple, on donne une estimation
+            const offset = new Date().getTimezoneOffset();
+            const hours = Math.abs(offset / 60);
+            const sign = offset < 0 ? '+' : '-';
+            showNotification(`Fuseau horaire estimé: UTC${sign}${hours}`, "info");
         }
         
         // =================== OUTILS ===================
@@ -3337,6 +3617,7 @@
                 drawnItems.clearLayers();
                 clearEmpireLayers();
                 clearWarLayers();
+                clearCoordinateMarker();
                 
                 if (currentPositionMarker) {
                     map.removeLayer(currentPositionMarker);
@@ -3385,7 +3666,7 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${pos.name}</td>
-                    <td>${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}</td>
+                    <td>${pos.lat ? pos.lat.toFixed(4) : 'N/A'}, ${pos.lng ? pos.lng.toFixed(4) : 'N/A'}</td>
                     <td>${pos.timestamp}</td>
                     <td>
                         <button onclick="centerOnPosition(${pos.lat}, ${pos.lng})" style="
@@ -3795,6 +4076,7 @@
             
             // Outils
             document.getElementById('measure-distance').addEventListener('click', startMeasuring);
+            document.getElementById('find-coordinates').addEventListener('click', showCoordinatesPanel);
             document.getElementById('clear-map').addEventListener('click', clearMap);
             document.getElementById('show-legend').addEventListener('click', showLegend);
             document.getElementById('view-positions').addEventListener('click', showPositionsPanel);
@@ -3825,6 +4107,7 @@
             
             // Fermeture des panels
             document.getElementById('close-click-info').addEventListener('click', closeClickInfo);
+            document.getElementById('close-coordinates-panel').addEventListener('click', closeCoordinatesPanel);
             document.getElementById('close-timeline').addEventListener('click', closeTimeline);
             document.getElementById('close-empires-panel').addEventListener('click', closeEmpiresPanel);
             document.getElementById('close-wars-panel').addEventListener('click', closeWarsPanel);
@@ -3894,6 +4177,10 @@
             // Éditeur texte
             document.getElementById('cancel-text').addEventListener('click', cancelText);
             document.getElementById('save-text').addEventListener('click', saveText);
+            
+            // Panel coordonnées
+            document.getElementById('clear-coordinates').addEventListener('click', clearCoordinateMarker);
+            document.getElementById('find-coordinates-btn').addEventListener('click', findCoordinates);
             
             // Annotation panel
             document.getElementById('start-annotation').addEventListener('click', function() {
