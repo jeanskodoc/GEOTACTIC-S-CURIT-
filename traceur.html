@@ -1,4 +1,3102 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoHISTORY Pro - Système Cartographique Militaire</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        :root {
+            --primary-color: #006400;
+            --accent-color: #ff9800;
+            --military-green: #228B22;
+            --danger-red: #DC143C;
+            --warning-yellow: #FFD700;
+            --light-bg: #f5f7fa;
+            --text-color: #333;
+            --whatsapp-green: #25D366;
+            --gps-blue: #0066FF;
+            --tracking-orange: #FF5722;
+            --route-color: #8B0000;
+            --my-position-color: #FF00FF;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Sidebar militaire */
+        .main-sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #0a2f0a 0%, #1a5f1a 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+            border-right: 3px solid var(--accent-color);
+        }
+        
+        .logo {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--military-green) 100%);
+        }
+        
+        .logo h1 {
+            font-size: 1.2rem;
+            margin-bottom: 3px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .logo .tagline {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        
+        .world-icon {
+            font-size: 1.8rem;
+            margin: 8px 0;
+            color: var(--accent-color);
+        }
+        
+        .tool-groups {
+            padding: 10px;
+            flex-grow: 1;
+        }
+        
+        .tool-group {
+            margin-bottom: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 3px solid var(--accent-color);
+        }
+        
+        .tool-group-title {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        
+        .tool-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .tool-btn {
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 4px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            line-height: 1.2;
+            border: none;
+        }
+        
+        .tool-btn:hover {
+            background-color: rgba(255, 152, 0, 0.3);
+            transform: translateX(4px);
+            border-color: var(--accent-color);
+        }
+        
+        .tool-btn.active {
+            background-color: rgba(255, 152, 0, 0.4);
+            border-color: var(--accent-color);
+            font-weight: bold;
+        }
+        
+        .tool-btn.military {
+            background: linear-gradient(135deg, rgba(34, 139, 34, 0.2), rgba(139, 69, 19, 0.2));
+            border-left: 3px solid var(--military-green);
+        }
+        
+        .tool-btn.gps {
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.2), rgba(0, 102, 255, 0.4));
+            border-left: 3px solid var(--gps-blue);
+        }
+        
+        .tool-btn.whatsapp {
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.2), rgba(37, 211, 102, 0.4));
+            border-left: 3px solid var(--whatsapp-green);
+        }
+        
+        .tool-btn.tracking {
+            background: linear-gradient(135deg, rgba(255, 87, 34, 0.2), rgba(255, 87, 34, 0.4));
+            border-left: 3px solid var(--tracking-orange);
+        }
+        
+        .tool-btn.route {
+            background: linear-gradient(135deg, rgba(139, 0, 0, 0.2), rgba(139, 0, 0, 0.4));
+            border-left: 3px solid var(--route-color);
+        }
+        
+        .tool-btn.position {
+            background: linear-gradient(135deg, rgba(255, 0, 255, 0.2), rgba(255, 0, 255, 0.4));
+            border-left: 3px solid var(--my-position-color);
+        }
+        
+        .tool-btn i {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        
+        /* Main content */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: linear-gradient(135deg, #e8f5e8 0%, #d4e6d4 100%);
+        }
+        
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background: linear-gradient(90deg, #0a2f0a 0%, var(--primary-color) 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            min-height: 50px;
+            border-bottom: 2px solid var(--accent-color);
+        }
+        
+        .military-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .fat-logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #006400, #228B22);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border: 2px solid var(--accent-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .action-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .action-btn:hover {
+            background-color: #ffad33;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .action-btn.military {
+            background: linear-gradient(135deg, var(--military-green), #8B4513);
+        }
+        
+        .action-btn.gps {
+            background: linear-gradient(135deg, var(--gps-blue), #0044CC);
+        }
+        
+        .action-btn.tracking {
+            background: linear-gradient(135deg, var(--tracking-orange), #E64A19);
+        }
+        
+        .action-btn.whatsapp {
+            background: linear-gradient(135deg, var(--whatsapp-green), #128C7E);
+        }
+        
+        .action-btn.route {
+            background: linear-gradient(135deg, var(--route-color), #660000);
+        }
+        
+        .action-btn.position {
+            background: linear-gradient(135deg, var(--my-position-color), #CC00CC);
+        }
+        
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.8rem;
+        }
+        
+        .location-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .location-status.active {
+            color: var(--accent-color);
+            background-color: rgba(255, 152, 0, 0.3);
+            font-weight: bold;
+        }
+        
+        .location-status.tracking {
+            color: var(--tracking-orange);
+            background-color: rgba(255, 87, 34, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        .location-status.gps {
+            color: var(--gps-blue);
+            background-color: rgba(0, 102, 255, 0.3);
+        }
+        
+        .location-status.position {
+            color: var(--my-position-color);
+            background-color: rgba(255, 0, 255, 0.3);
+            animation: pulse-position 2s infinite;
+        }
+        
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mode-selector select {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #0a2f0a;
+            font-weight: 600;
+            min-width: 180px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .map-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+        
+        /* Mode plein écran */
+        .map-container.fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 9999 !important;
+            background: white;
+        }
+        
+        .map-container.fullscreen .map-controls {
+            top: 20px;
+            right: 20px;
+        }
+        
+        .map-container.fullscreen .gps-dashboard {
+            bottom: 30px;
+            left: 30px;
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--military-green);
+        }
+        
+        .map-control {
+            background-color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--military-green);
+            transition: all 0.2s;
+            border: 1px solid #ddd;
+        }
+        
+        .map-control:hover {
+            transform: translateY(-2px);
+            border-color: var(--military-green);
+            color: var(--military-green);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .map-control.active {
+            background-color: var(--military-green);
+            color: white;
+            border-color: var(--military-green);
+        }
+        
+        .map-control.gps {
+            color: var(--gps-blue);
+            border-color: var(--gps-blue);
+        }
+        
+        .map-control.gps.active {
+            background-color: var(--gps-blue);
+            color: white;
+            border-color: var(--gps-blue);
+        }
+        
+        .map-control.tracking {
+            color: var(--tracking-orange);
+            border-color: var(--tracking-orange);
+        }
+        
+        .map-control.tracking.active {
+            background-color: var(--tracking-orange);
+            color: white;
+            border-color: var(--tracking-orange);
+        }
+        
+        .map-control.whatsapp {
+            color: var(--whatsapp-green);
+            border-color: var(--whatsapp-green);
+        }
+        
+        .map-control.whatsapp.active {
+            background-color: var(--whatsapp-green);
+            color: white;
+            border-color: var(--whatsapp-green);
+        }
+        
+        .map-control.position {
+            color: var(--my-position-color);
+            border-color: var(--my-position-color);
+        }
+        
+        .map-control.position.active {
+            background-color: var(--my-position-color);
+            color: white;
+            border-color: var(--my-position-color);
+        }
+        
+        /* Dashboard GPS */
+        .gps-dashboard {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 320px;
+            border: 3px solid var(--gps-blue);
+        }
+        
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--gps-blue);
+        }
+        
+        .dashboard-header h3 {
+            font-size: 1rem;
+            color: var(--gps-blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .gps-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .metric {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid var(--gps-blue);
+        }
+        
+        .metric-label {
+            font-size: 0.7rem;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        
+        .metric-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--gps-blue);
+        }
+        
+        .metric-unit {
+            font-size: 0.7rem;
+            color: #666;
+        }
+        
+        .tracking-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        /* Panneau de calcul de distance */
+        .distance-panel {
+            position: absolute;
+            top: 15px;
+            left: 380px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 320px;
+            border: 3px solid var(--route-color);
+            display: none;
+        }
+        
+        .distance-panel.active {
+            display: block;
+        }
+        
+        .distance-panel .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--route-color);
+        }
+        
+        .distance-panel h3 {
+            font-size: 1rem;
+            color: var(--route-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .point-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .point-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .point-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .point-marker {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .point-a {
+            background-color: #FF5722;
+        }
+        
+        .point-b {
+            background-color: #0066FF;
+        }
+        
+        .distance-result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--route-color);
+        }
+        
+        .distance-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--route-color);
+            text-align: center;
+            margin: 10px 0;
+        }
+        
+        /* Panneau de localisation */
+        .location-panel {
+            position: absolute;
+            top: 15px;
+            right: 380px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 320px;
+            border: 3px solid var(--my-position-color);
+            display: none;
+        }
+        
+        .location-panel.active {
+            display: block;
+        }
+        
+        .location-panel .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--my-position-color);
+        }
+        
+        .location-panel h3 {
+            font-size: 1rem;
+            color: var(--my-position-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .location-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--my-position-color);
+        }
+        
+        .location-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .location-info-item .label {
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .location-info-item .value {
+            color: var(--my-position-color);
+            font-weight: bold;
+        }
+        
+        /* Outils de dessin */
+        .draw-tools {
+            position: absolute;
+            top: 80px;
+            right: 70px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            border: 2px solid var(--military-green);
+        }
+        
+        .draw-tools.active {
+            display: flex;
+        }
+        
+        .draw-tool {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: var(--military-green);
+            background: white;
+            border: 1px solid #ddd;
+            transition: all 0.2s;
+        }
+        
+        .draw-tool:hover {
+            background-color: var(--military-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* Barre d'état militaire */
+        .status-bar {
+            background: linear-gradient(90deg, #0a2f0a 0%, var(--primary-color) 100%);
+            padding: 8px 15px;
+            font-size: 0.75rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            border-top: 2px solid var(--accent-color);
+            min-height: 36px;
+        }
+        
+        #status-message {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+        
+        .coordinate-system {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--accent-color);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 12px 15px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+            border-left: 4px solid var(--primary-color);
+            max-width: 350px;
+        }
+        
+        .notification.active {
+            transform: translateX(0);
+        }
+        
+        .notification.military {
+            border-left-color: var(--military-green);
+        }
+        
+        .notification.gps {
+            border-left-color: var(--gps-blue);
+        }
+        
+        .notification.tracking {
+            border-left-color: var(--tracking-orange);
+        }
+        
+        .notification.whatsapp {
+            border-left-color: var(--whatsapp-green);
+        }
+        
+        .notification.route {
+            border-left-color: var(--route-color);
+        }
+        
+        .notification.position {
+            border-left-color: var(--my-position-color);
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes pulse-gps {
+            0% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 102, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 102, 255, 0); }
+        }
+        
+        @keyframes pulse-position {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 0, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 255, 0); }
+        }
+        
+        @keyframes pulse-route {
+            0% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(139, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0); }
+        }
+        
+        /* Style pour le marqueur de position */
+        .my-position-marker {
+            animation: pulse-position 2s infinite;
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 1200px) {
+            .main-sidebar {
+                width: 240px;
+            }
+            .distance-panel {
+                left: 280px;
+                width: 280px;
+            }
+            .location-panel {
+                right: 280px;
+                width: 280px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .main-sidebar {
+                width: 220px;
+            }
+            .distance-panel {
+                left: 250px;
+                width: 250px;
+            }
+            .location-panel {
+                right: 250px;
+                width: 250px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .main-sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 300px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                overflow-x: auto;
+            }
+            
+            .logo {
+                width: 100%;
+                padding: 8px;
+            }
+            
+            .tool-groups {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 8px;
+            }
+            
+            .tool-group {
+                margin-bottom: 0;
+                min-width: 180px;
+                flex-grow: 1;
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            
+            .location-info {
+                flex-direction: column;
+                width: 100%;
+                gap: 10px;
+            }
+            
+            .mode-selector {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .distance-panel {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 400px;
+                z-index: 2000;
+            }
+            
+            .location-panel {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 400px;
+                z-index: 2000;
+            }
+            
+            .draw-tools {
+                top: 70px;
+                right: 15px;
+            }
+            
+            .gps-dashboard {
+                width: 90%;
+                left: 5%;
+                bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar militaire -->
+    <div class="main-sidebar">
+        <div class="logo">
+            <div class="military-logo">
+                <div class="world-icon">
+                    <i class="fas fa-crosshairs"></i>
+                </div>
+                <h1>GeoHISTORY Pro MIL</h1>
+                <div class="tagline">Système Cartographique Militaire</div>
+                <div style="margin-top: 5px; font-size: 0.65rem; color: #FFD700;">
+                    <i class="fas fa-shield-alt"></i> FORCES ARMÉES TOGOLAISES
+                </div>
+            </div>
+        </div>
+        
+        <div class="tool-groups">
+            <!-- Ma Position -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-location-dot"></i>
+                    <span>MA POSITION</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn position" id="find-my-position">
+                        <i class="fas fa-location-crosshairs"></i>
+                        Localiser Moi
+                    </button>
+                    <button class="tool-btn position" id="save-position">
+                        <i class="fas fa-bookmark"></i>
+                        Sauvegarder
+                    </button>
+                    <button class="tool-btn position" id="show-location-panel">
+                        <i class="fas fa-info-circle"></i>
+                        Détails Position
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Suivi GPS Automatique -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-satellite"></i>
+                    <span>SUIVI GPS AUTOMATIQUE</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn gps active" id="auto-gps">
+                        <i class="fas fa-broadcast-tower"></i>
+                        GPS Auto
+                    </button>
+                    <button class="tool-btn tracking" id="live-tracking">
+                        <i class="fas fa-location-arrow"></i>
+                        Suivi Live
+                    </button>
+                    <button class="tool-btn" id="fullscreen-map">
+                        <i class="fas fa-expand"></i>
+                        Plein écran
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Modification de Carte -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-edit"></i>
+                    <span>MODIFICATION DE CARTE</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="draw-marker">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Ajouter Marqueur
+                    </button>
+                    <button class="tool-btn" id="draw-polyline">
+                        <i class="fas fa-draw-polygon"></i>
+                        Dessiner Ligne
+                    </button>
+                    <button class="tool-btn" id="draw-polygon">
+                        <i class="fas fa-draw-polygon"></i>
+                        Dessiner Zone
+                    </button>
+                    <button class="tool-btn" id="clear-drawings">
+                        <i class="fas fa-trash-alt"></i>
+                        Effacer Dessins
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Calcul de Distance -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-ruler-combined"></i>
+                    <span>CALCUL DE DISTANCE</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn route" id="measure-distance">
+                        <i class="fas fa-ruler"></i>
+                        Mesurer Distance
+                    </button>
+                    <button class="tool-btn route" id="generate-route">
+                        <i class="fas fa-route"></i>
+                        Générer Trajet
+                    </button>
+                    <button class="tool-btn route" id="multi-point">
+                        <i class="fas fa-map-pin"></i>
+                        Points Multiples
+                    </button>
+                    <button class="tool-btn" id="export-measurements">
+                        <i class="fas fa-file-export"></i>
+                        Exporter Mesures
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Partage WhatsApp -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>PARTAGE WHATSAPP</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn whatsapp" id="whatsapp-share">
+                        <i class="fas fa-share-alt"></i>
+                        Partager position
+                    </button>
+                    <button class="tool-btn whatsapp" id="auto-whatsapp">
+                        <i class="fas fa-robot"></i>
+                        Auto-partage
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Système -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-cogs"></i>
+                    <span>SYSTÈME</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="system-status">
+                        <i class="fas fa-heartbeat"></i>
+                        État système
+                    </button>
+                    <button class="tool-btn" id="export-data">
+                        <i class="fas fa-database"></i>
+                        Exporter données
+                    </button>
+                    <button class="tool-btn" id="reset-system">
+                        <i class="fas fa-redo"></i>
+                        Réinitialiser
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div style="padding: 10px; font-size: 0.7rem; opacity: 0.8; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1); width: 100%;">
+            <span class="coordinate-system">GPS LIVE - WGS84</span>
+            <div style="margin-top: 5px; color: #FFD700;">
+                <i class="fas fa-shield-alt"></i> SUIVI EN TEMPS RÉEL
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenu principal -->
+    <div class="main-content">
+        <!-- Barre supérieure militaire -->
+        <div class="top-bar">
+            <div class="military-badge">
+                <div class="fat-logo">
+                    FAT
+                </div>
+                <div>
+                    <h2 style="font-size: 1rem; font-weight: 700;">FORCES ARMÉES TOGOLAISES</h2>
+                    <div style="font-size: 0.75rem; opacity: 0.9;">Système Cartographique Avancé</div>
+                </div>
+            </div>
+            
+            <div class="location-info">
+                <div class="location-status gps" id="location-status">
+                    <i class="fas fa-satellite"></i>
+                    <span id="gps-status">GPS: INITIALISATION...</span>
+                </div>
+                
+                <div class="mode-selector">
+                    <select id="mode-select">
+                        <option value="position">MA POSITION</option>
+                        <option value="gps">MODE GPS</option>
+                        <option value="tracking">SUIVI AUTOMATIQUE</option>
+                        <option value="measure">MESURE</option>
+                        <option value="edit">ÉDITION</option>
+                    </select>
+                    <button class="action-btn tracking" id="tracking-toggle">
+                        <i class="fas fa-play"></i> DÉMARRER
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteneur carte -->
+        <div class="map-container" id="map-container">
+            <div id="map"></div>
+            
+            <!-- Dashboard GPS -->
+            <div class="gps-dashboard" id="gps-dashboard">
+                <div class="dashboard-header">
+                    <h3><i class="fas fa-satellite-dish"></i> DASHBOARD GPS LIVE</h3>
+                    <button id="close-dashboard" style="background: none; border: none; color: var(--gps-blue); cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="gps-metrics">
+                    <div class="metric">
+                        <div class="metric-label">POSITION</div>
+                        <div class="metric-value" id="metric-position">--</div>
+                        <div class="metric-unit">LAT, LNG</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">PRÉCISION</div>
+                        <div class="metric-value" id="metric-accuracy">--</div>
+                        <div class="metric-unit">mètres</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">VITESSE</div>
+                        <div class="metric-value" id="metric-speed">--</div>
+                        <div class="metric-unit">km/h</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">DISTANCE</div>
+                        <div class="metric-value" id="metric-distance">0.00</div>
+                        <div class="metric-unit">km</div>
+                    </div>
+                </div>
+                
+                <div class="tracking-controls">
+                    <button class="action-btn gps" id="center-position" style="flex: 1;">
+                        <i class="fas fa-crosshairs"></i> CENTRER
+                    </button>
+                    <button class="action-btn whatsapp" id="quick-share" style="flex: 1;">
+                        <i class="fab fa-whatsapp"></i> PARTAGER
+                    </button>
+                    <button class="action-btn position" id="toggle-my-position" style="flex: 1;">
+                        <i class="fas fa-location-dot"></i> MA POS
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Panneau de calcul de distance -->
+            <div class="distance-panel" id="distance-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-ruler-combined"></i> CALCUL DE DISTANCE</h3>
+                    <button id="close-distance" style="background: none; border: none; color: var(--route-color); cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="point-info">
+                    <div class="point-input">
+                        <div class="point-marker point-a">A</div>
+                        <input type="text" id="point-a-input" placeholder="Point A (cliquez sur la carte)" readonly>
+                    </div>
+                    <div class="point-input">
+                        <div class="point-marker point-b">B</div>
+                        <input type="text" id="point-b-input" placeholder="Point B (cliquez sur la carte)" readonly>
+                    </div>
+                </div>
+                
+                <div class="distance-result">
+                    <div class="metric-label">DISTANCE ENTRE LES POINTS</div>
+                    <div class="distance-value" id="distance-value">0.0 km</div>
+                    <div id="distance-details" style="font-size: 0.8rem; text-align: center; color: #666;">
+                        Distance en ligne droite
+                    </div>
+                </div>
+                
+                <div class="tracking-controls">
+                    <button class="action-btn route" id="calculate-distance" style="flex: 1;">
+                        <i class="fas fa-calculator"></i> CALCULER
+                    </button>
+                    <button class="action-btn route" id="generate-route-btn" style="flex: 1;">
+                        <i class="fas fa-route"></i> TRAJET
+                    </button>
+                    <button class="action-btn" id="clear-points" style="flex: 1;">
+                        <i class="fas fa-trash"></i> EFFACER
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Panneau de localisation -->
+            <div class="location-panel" id="location-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-location-dot"></i> MA POSITION ACTUELLE</h3>
+                    <button id="close-location" style="background: none; border: none; color: var(--my-position-color); cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="location-details">
+                    <div class="location-info-item">
+                        <span class="label">Latitude:</span>
+                        <span class="value" id="detail-lat">--</span>
+                    </div>
+                    <div class="location-info-item">
+                        <span class="label">Longitude:</span>
+                        <span class="value" id="detail-lng">--</span>
+                    </div>
+                    <div class="location-info-item">
+                        <span class="label">Précision:</span>
+                        <span class="value" id="detail-accuracy">--</span>
+                    </div>
+                    <div class="location-info-item">
+                        <span class="label">Altitude:</span>
+                        <span class="value" id="detail-altitude">--</span>
+                    </div>
+                    <div class="location-info-item">
+                        <span class="label">Vitesse:</span>
+                        <span class="value" id="detail-speed">--</span>
+                    </div>
+                    <div class="location-info-item">
+                        <span class="label">Direction:</span>
+                        <span class="value" id="detail-heading">--</span>
+                    </div>
+                    <div class="location-info-item">
+                        <span class="label">Dernière mise à jour:</span>
+                        <span class="value" id="detail-timestamp">--</span>
+                    </div>
+                </div>
+                
+                <div class="tracking-controls">
+                    <button class="action-btn position" id="update-position" style="flex: 1;">
+                        <i class="fas fa-sync-alt"></i> ACTUALISER
+                    </button>
+                    <button class="action-btn position" id="save-current-position" style="flex: 1;">
+                        <i class="fas fa-bookmark"></i> SAUVEGARDER
+                    </button>
+                    <button class="action-btn whatsapp" id="share-my-position" style="flex: 1;">
+                        <i class="fab fa-whatsapp"></i> PARTAGER
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Outils de dessin -->
+            <div class="draw-tools" id="draw-tools">
+                <div class="draw-tool" id="draw-tool-marker" title="Ajouter un marqueur">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="draw-tool" id="draw-tool-polyline" title="Dessiner une ligne">
+                    <i class="fas fa-slash"></i>
+                </div>
+                <div class="draw-tool" id="draw-tool-polygon" title="Dessiner une zone">
+                    <i class="fas fa-draw-polygon"></i>
+                </div>
+                <div class="draw-tool" id="draw-tool-circle" title="Dessiner un cercle">
+                    <i class="fas fa-circle"></i>
+                </div>
+                <div class="draw-tool" id="draw-tool-rectangle" title="Dessiner un rectangle">
+                    <i class="fas fa-square"></i>
+                </div>
+            </div>
+            
+            <!-- Contrôles carte -->
+            <div class="map-controls">
+                <div class="map-control" id="zoom-in" title="Zoom +">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="map-control" id="zoom-out" title="Zoom -">
+                    <i class="fas fa-minus"></i>
+                </div>
+                <div class="map-control gps" id="locate-me" title="Ma position">
+                    <i class="fas fa-crosshairs"></i>
+                </div>
+                <div class="map-control position" id="show-my-position" title="Afficher ma position">
+                    <i class="fas fa-location-dot"></i>
+                </div>
+                <div class="map-control" id="toggle-measure" title="Mesurer">
+                    <i class="fas fa-ruler"></i>
+                </div>
+                <div class="map-control" id="toggle-draw" title="Outils de dessin">
+                    <i class="fas fa-pencil-alt"></i>
+                </div>
+                <div class="map-control" id="toggle-dashboard" title="Dashboard">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Barre d'état militaire -->
+        <div class="status-bar">
+            <div id="status-message">
+                <i class="fas fa-shield-alt"></i> <span id="system-status-text">SYSTÈME GPS EN INITIALISATION...</span>
+            </div>
+            <div>
+                <span id="coordinates">--, --</span> | 
+                <span class="coordinate-system">GPS LIVE</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i class="fas fa-info-circle"></i>
+        <span id="notification-message">Système de suivi GPS initialisé</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script>
+        // =================== VARIABLES GLOBALES ===================
+        let map;
+        let currentPositionMarker = null;
+        let accuracyCircle = null;
+        let positionPath = null;
+        let positionHistory = [];
+        let positionWatchId = null;
+        let lastPosition = null;
+        let autoCenterEnabled = true;
+        let autoTrackingEnabled = false;
+        let autoWhatsAppEnabled = false;
+        let drawControl = null;
+        let drawnItems = new L.FeatureGroup();
+        let distancePoints = { pointA: null, pointB: null };
+        let distanceMarkers = [];
+        let distanceLine = null;
+        let isMeasuring = false;
+        let isDrawing = false;
+        let totalDistance = 0;
+        let multiPointsMode = false;
+        let multiPoints = [];
+        let multiPointsLine = null;
+        let currentDrawMode = null;
+        let myPositionMarker = null;
+        let myPositionAccuracyCircle = null;
+        let savedPositions = [];
+        let isShowingMyPosition = false;
+        let isFullscreen = false;
+        
+        // Configuration
+        const GPS_CONFIG = {
+            highAccuracy: true,
+            maximumAge: 3000,
+            timeout: 10000,
+            maxHistory: 500,
+            autoCenterZoom: 16,
+            positionUpdateInterval: 1000,
+            minDistance: 10,
+            whatsappPhone: "+22892871605"
+        };
+        
+        // =================== INITIALISATION ===================
+        
+        function initMilitaryMap() {
+            console.log("Initialisation de la carte militaire...");
+            
+            // Créer la carte avec vue sur le Togo
+            map = L.map('map', {
+                crs: L.CRS.EPSG3857,
+                minZoom: 2,
+                maxZoom: 19,
+                zoomControl: false,
+                preferCanvas: true,
+                attributionControl: false
+            }).setView([8.6195, 0.8248], 8);
+            
+            // Ajouter la couche OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(map);
+            
+            // Ajouter le groupe pour les éléments dessinés
+            drawnItems.addTo(map);
+            
+            // Initialiser les contrôles de dessin
+            initDrawControls();
+            
+            // Ajouter le contrôle de géocodage
+            L.Control.geocoder({
+                defaultMarkGeocode: false,
+                position: 'topleft',
+                placeholder: 'Rechercher une adresse...',
+                collapsed: true
+            }).addTo(map);
+            
+            // Configurer les événements de la carte
+            setupMapEvents();
+            
+            // Démarrer le suivi GPS automatique
+            startAutoGPS();
+            
+            // Mettre à jour l'interface
+            updateStatusDisplay();
+            
+            showNotification("Système cartographique militaire initialisé", "gps");
+            
+            // Démarrer la mise à jour en temps réel
+            startInterfaceUpdates();
+            
+            // Charger les positions sauvegardées
+            loadSavedPositions();
+            
+            console.log("Carte initialisée avec succès");
+        }
+        
+        function initDrawControls() {
+            console.log("Initialisation des outils de dessin...");
+            
+            // Initialiser les outils de dessin
+            drawControl = new L.Control.Draw({
+                position: 'topleft',
+                draw: {
+                    polygon: {
+                        shapeOptions: {
+                            color: '#006400',
+                            weight: 3,
+                            fillColor: '#228B22',
+                            fillOpacity: 0.2
+                        },
+                        allowIntersection: false,
+                        drawError: {
+                            color: '#DC143C',
+                            timeout: 1000
+                        },
+                        showArea: true,
+                        metric: true
+                    },
+                    polyline: {
+                        shapeOptions: {
+                            color: '#0066FF',
+                            weight: 4,
+                            dashArray: '5, 5'
+                        },
+                        metric: true
+                    },
+                    circle: {
+                        shapeOptions: {
+                            color: '#FF5722',
+                            weight: 3,
+                            fillColor: '#FF5722',
+                            fillOpacity: 0.1
+                        },
+                        metric: true
+                    },
+                    rectangle: {
+                        shapeOptions: {
+                            color: '#8B0000',
+                            weight: 3,
+                            fillColor: '#8B0000',
+                            fillOpacity: 0.1
+                        }
+                    },
+                    marker: {
+                        icon: L.divIcon({
+                            className: 'custom-marker',
+                            html: '<i class="fas fa-map-marker-alt" style="color: #DC143C; font-size: 24px;"></i>',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 24]
+                        })
+                    }
+                },
+                edit: {
+                    featureGroup: drawnItems,
+                    remove: true
+                }
+            });
+            
+            console.log("Outils de dessin initialisés");
+        }
+        
+        function setupMapEvents() {
+            console.log("Configuration des événements de la carte...");
+            
+            // Suivi de la souris pour afficher les coordonnées
+            map.on('mousemove', function(e) {
+                document.getElementById('coordinates').textContent = 
+                    `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+            });
+            
+            // Clic sur la carte pour la mesure
+            map.on('click', function(e) {
+                if (isMeasuring) {
+                    if (multiPointsMode) {
+                        addMultiPoint(e.latlng);
+                    } else {
+                        addDistancePoint(e.latlng);
+                    }
+                } else if (currentDrawMode === 'marker') {
+                    addManualMarker(e.latlng);
+                } else {
+                    showPositionInfo(e.latlng);
+                }
+            });
+            
+            // Événements pour le dessin
+            map.on(L.Draw.Event.CREATED, function(e) {
+                const layer = e.layer;
+                drawnItems.addLayer(layer);
+                
+                // Ajouter un popup avec les informations
+                if (layer instanceof L.Polygon) {
+                    const area = calculatePolygonArea(layer.getLatLngs()[0]);
+                    layer.bindPopup(`Zone: ${(area / 1000000).toFixed(2)} km²`);
+                    showNotification(`Zone créée: ${(area / 1000000).toFixed(2)} km²`, "gps");
+                } else if (layer instanceof L.Polyline) {
+                    const distance = calculatePolylineDistance(layer.getLatLngs());
+                    layer.bindPopup(`Distance: ${distance.toFixed(2)} km`);
+                    showNotification(`Ligne créée: ${distance.toFixed(2)} km`, "gps");
+                } else if (layer instanceof L.Circle) {
+                    const radius = layer.getRadius();
+                    const area = Math.PI * radius * radius;
+                    layer.bindPopup(`Rayon: ${radius.toFixed(0)} m | Surface: ${(area / 1000000).toFixed(2)} km²`);
+                    showNotification(`Cercle créé: rayon ${radius.toFixed(0)} m`, "gps");
+                } else if (layer instanceof L.Rectangle) {
+                    const bounds = layer.getBounds();
+                    const area = calculateRectangleArea(bounds);
+                    layer.bindPopup(`Surface: ${(area / 1000000).toFixed(2)} km²`);
+                    showNotification(`Rectangle créé: ${(area / 1000000).toFixed(2)} km²`, "gps");
+                } else if (layer instanceof L.Marker) {
+                    layer.bindPopup(`Marqueur ajouté`);
+                    showNotification("Marqueur ajouté", "gps");
+                }
+                
+                layer.openPopup();
+            });
+            
+            map.on(L.Draw.Event.EDITED, function(e) {
+                showNotification("Élément modifié", "gps");
+            });
+            
+            map.on(L.Draw.Event.DELETED, function(e) {
+                showNotification("Élément supprimé", "gps");
+            });
+            
+            console.log("Événements de carte configurés");
+        }
+        
+        // =================== FONCTIONS DE LOCALISATION ===================
+        
+        function findMyPosition() {
+            console.log("Recherche de la position...");
+            
+            if (!navigator.geolocation) {
+                showNotification("Géolocalisation non supportée par votre navigateur", "warning");
+                return;
+            }
+            
+            showNotification("Recherche de votre position en cours...", "position");
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    console.log("Position trouvée:", position.coords);
+                    updateMyPosition(position);
+                    centerOnMyPosition();
+                    showNotification("Position trouvée avec succès !", "position");
+                },
+                function(error) {
+                    console.error("Erreur de géolocalisation:", error);
+                    handlePositionError(error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+        
+        function updateMyPosition(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            const speed = position.coords.speed || 0;
+            const altitude = position.coords.altitude || 0;
+            const heading = position.coords.heading || 0;
+            const timestamp = new Date(position.timestamp);
+            
+            console.log(`Mise à jour position: ${lat}, ${lng}, précision: ${accuracy}m`);
+            
+            // Mettre à jour le marqueur de position
+            updateMyPositionMarker(lat, lng, accuracy, speed, heading);
+            
+            // Mettre à jour les détails dans le panneau
+            updateLocationDetails(position.coords, timestamp);
+            
+            // Mettre à jour le statut
+            document.getElementById('location-status').classList.add('position');
+            document.getElementById('gps-status').textContent = `MA POSITION: ±${accuracy.toFixed(0)}m`;
+            
+            // Si le mode suivi est activé, mettre à jour la dernière position
+            if (autoTrackingEnabled) {
+                lastPosition = {
+                    lat, lng, accuracy, speed, altitude, heading, timestamp
+                };
+                updatePositionDisplay(lastPosition);
+            }
+        }
+        
+        function updateMyPositionMarker(lat, lng, accuracy, speed, heading) {
+            // Supprimer l'ancien marqueur s'il existe
+            if (myPositionMarker) {
+                map.removeLayer(myPositionMarker);
+            }
+            if (myPositionAccuracyCircle) {
+                map.removeLayer(myPositionAccuracyCircle);
+            }
+            
+            // Créer un nouveau marqueur personnalisé pour ma position
+            myPositionMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'my-position-marker',
+                    html: createMyPositionMarkerHTML(speed, heading),
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 30]
+                }),
+                zIndexOffset: 2000
+            }).addTo(map);
+            
+            // Ajouter un popup informatif
+            myPositionMarker.bindPopup(createMyPositionPopup(lat, lng, accuracy, speed, heading));
+            
+            // Ajouter un cercle de précision
+            if (accuracy) {
+                myPositionAccuracyCircle = L.circle([lat, lng], {
+                    radius: accuracy,
+                    color: '#FF00FF',
+                    fillColor: '#FF00FF',
+                    fillOpacity: 0.1,
+                    weight: 2,
+                    dashArray: '5, 5'
+                }).addTo(map);
+            }
+            
+            isShowingMyPosition = true;
+            document.getElementById('show-my-position').classList.add('active');
+            document.getElementById('toggle-my-position').classList.add('active');
+        }
+        
+        function createMyPositionMarkerHTML(speed, heading) {
+            const speedText = speed > 0 ? `${(speed * 3.6).toFixed(0)} km/h` : 'Stationnaire';
+            
+            return `
+                <div style="position: relative; width: 60px; height: 60px;">
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: radial-gradient(circle, rgba(255,0,255,0.8) 0%, rgba(255,0,255,0.4) 70%, transparent 100%);
+                        border-radius: 50%;
+                        border: 4px solid white;
+                        box-shadow: 0 0 20px rgba(255,0,255,0.7);
+                        animation: pulse-position 2s infinite;
+                    ">
+                        <i class="fas fa-user" style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%) rotate(${heading}deg);
+                            color: white;
+                            font-size: 24px;
+                        "></i>
+                    </div>
+                    <div style="
+                        position: absolute;
+                        bottom: -8px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: #FF00FF;
+                        color: white;
+                        padding: 3px 8px;
+                        border-radius: 12px;
+                        font-size: 11px;
+                        font-weight: bold;
+                        white-space: nowrap;
+                        border: 2px solid white;
+                    ">
+                        VOUS
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createMyPositionPopup(lat, lng, accuracy, speed, heading) {
+            const time = new Date().toLocaleTimeString();
+            const date = new Date().toLocaleDateString();
+            const speedKmh = (speed * 3.6).toFixed(1);
+            const accuracyText = accuracy ? accuracy.toFixed(0) : "Inconnue";
+            const direction = getDirectionFromHeading(heading);
+            
+            return `
+                <div style="min-width: 300px;">
+                    <h4 style="margin: 0 0 10px 0; color: #FF00FF;">
+                        <i class="fas fa-location-dot"></i> VOTRE POSITION
+                    </h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.85rem;">
+                        <div>
+                            <strong>Latitude:</strong><br>
+                            ${lat.toFixed(6)}°
+                        </div>
+                        <div>
+                            <strong>Longitude:</strong><br>
+                            ${lng.toFixed(6)}°
+                        </div>
+                        <div>
+                            <strong>Précision:</strong><br>
+                            ±${accuracyText} m
+                        </div>
+                        <div>
+                            <strong>Vitesse:</strong><br>
+                            ${speedKmh} km/h
+                        </div>
+                        <div>
+                            <strong>Direction:</strong><br>
+                            ${direction}
+                        </div>
+                        <div>
+                            <strong>Heure:</strong><br>
+                            ${time}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 15px;">
+                        <button onclick="centerOnMyPosition()" style="
+                            flex: 1;
+                            background: #FF00FF;
+                            color: white;
+                            border: none;
+                            padding: 8px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            <i class="fas fa-crosshairs"></i> Centrer
+                        </button>
+                        <button onclick="saveCurrentPosition()" style="
+                            flex: 1;
+                            background: #006400;
+                            color: white;
+                            border: none;
+                            padding: 8px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            <i class="fas fa-bookmark"></i> Sauvegarder
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function getDirectionFromHeading(heading) {
+            if (heading === null || heading === undefined) return "Inconnue";
+            const directions = ['Nord', 'Nord-Est', 'Est', 'Sud-Est', 'Sud', 'Sud-Ouest', 'Ouest', 'Nord-Ouest'];
+            const index = Math.round(heading / 45) % 8;
+            return directions[index];
+        }
+        
+        function updateLocationDetails(coords, timestamp) {
+            document.getElementById('detail-lat').textContent = coords.latitude.toFixed(6) + '°';
+            document.getElementById('detail-lng').textContent = coords.longitude.toFixed(6) + '°';
+            document.getElementById('detail-accuracy').textContent = coords.accuracy ? `±${coords.accuracy.toFixed(0)} m` : 'Inconnue';
+            document.getElementById('detail-altitude').textContent = coords.altitude ? `${coords.altitude.toFixed(0)} m` : 'Inconnue';
+            document.getElementById('detail-speed').textContent = coords.speed ? `${(coords.speed * 3.6).toFixed(1)} km/h` : '0.0 km/h';
+            document.getElementById('detail-heading').textContent = coords.heading ? `${coords.heading.toFixed(0)}° (${getDirectionFromHeading(coords.heading)})` : 'Inconnue';
+            document.getElementById('detail-timestamp').textContent = timestamp.toLocaleString();
+        }
+        
+        function centerOnMyPosition() {
+            if (myPositionMarker) {
+                const latlng = myPositionMarker.getLatLng();
+                map.setView([latlng.lat, latlng.lng], GPS_CONFIG.autoCenterZoom);
+                showNotification("Centré sur votre position", "position");
+            } else {
+                showNotification("Position non disponible. Activez d'abord la localisation.", "warning");
+            }
+        }
+        
+        function toggleMyPositionDisplay() {
+            if (myPositionMarker) {
+                if (isShowingMyPosition) {
+                    map.removeLayer(myPositionMarker);
+                    if (myPositionAccuracyCircle) {
+                        map.removeLayer(myPositionAccuracyCircle);
+                    }
+                    isShowingMyPosition = false;
+                    document.getElementById('show-my-position').classList.remove('active');
+                    document.getElementById('toggle-my-position').classList.remove('active');
+                    showNotification("Votre position est masquée", "position");
+                } else {
+                    map.addLayer(myPositionMarker);
+                    if (myPositionAccuracyCircle) {
+                        map.addLayer(myPositionAccuracyCircle);
+                    }
+                    isShowingMyPosition = true;
+                    document.getElementById('show-my-position').classList.add('active');
+                    document.getElementById('toggle-my-position').classList.add('active');
+                    showNotification("Votre position est affichée", "position");
+                }
+            } else {
+                findMyPosition();
+            }
+        }
+        
+        function showLocationPanel() {
+            const panel = document.getElementById('location-panel');
+            panel.classList.add('active');
+            
+            if (myPositionMarker) {
+                const latlng = myPositionMarker.getLatLng();
+                // Mettre à jour les détails si disponibles
+                if (lastPosition) {
+                    updateLocationDetails(lastPosition, lastPosition.timestamp);
+                }
+            }
+            
+            showNotification("Panneau de position ouvert", "position");
+        }
+        
+        function saveCurrentPosition() {
+            if (!myPositionMarker) {
+                showNotification("Aucune position à sauvegarder", "warning");
+                return;
+            }
+            
+            const latlng = myPositionMarker.getLatLng();
+            const position = {
+                lat: latlng.lat,
+                lng: latlng.lng,
+                timestamp: new Date(),
+                name: `Position ${savedPositions.length + 1}`
+            };
+            
+            savedPositions.push(position);
+            savePositionsToStorage();
+            
+            // Ajouter un marqueur pour la position sauvegardée
+            const savedMarker = L.marker([latlng.lat, latlng.lng], {
+                icon: L.divIcon({
+                    className: 'saved-position-marker',
+                    html: '<i class="fas fa-bookmark" style="color: #FFD700; font-size: 28px;"></i>',
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 28]
+                })
+            }).addTo(map);
+            
+            savedMarker.bindPopup(`
+                <div style="min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: #FFD700;">
+                        <i class="fas fa-bookmark"></i> POSITION SAUVEGARDÉE
+                    </h4>
+                    <div style="font-size: 0.9rem;">
+                        <div><strong>Nom:</strong> ${position.name}</div>
+                        <div><strong>Latitude:</strong> ${position.lat.toFixed(6)}°</div>
+                        <div><strong>Longitude:</strong> ${position.lng.toFixed(6)}°</div>
+                        <div><strong>Date:</strong> ${position.timestamp.toLocaleDateString()}</div>
+                        <div><strong>Heure:</strong> ${position.timestamp.toLocaleTimeString()}</div>
+                    </div>
+                </div>
+            `);
+            
+            drawnItems.addLayer(savedMarker);
+            
+            showNotification("Position sauvegardée avec succès", "position");
+        }
+        
+        function savePositionsToStorage() {
+            try {
+                localStorage.setItem('savedPositions', JSON.stringify(savedPositions));
+                console.log("Positions sauvegardées dans le stockage local");
+            } catch (e) {
+                console.error("Erreur lors de la sauvegarde des positions:", e);
+            }
+        }
+        
+        function loadSavedPositions() {
+            try {
+                const saved = localStorage.getItem('savedPositions');
+                if (saved) {
+                    savedPositions = JSON.parse(saved);
+                    console.log(`${savedPositions.length} positions chargées du stockage local`);
+                    showNotification(`${savedPositions.length} positions chargées`, "position");
+                }
+            } catch (e) {
+                console.error("Erreur lors du chargement des positions:", e);
+            }
+        }
+        
+        // =================== FONCTIONS GPS ===================
+        
+        function startAutoGPS() {
+            console.log("Démarrage du suivi GPS automatique...");
+            
+            if (!navigator.geolocation) {
+                showNotification("GPS non disponible sur cet appareil", "warning");
+                return;
+            }
+            
+            // Démarrer le suivi de position en continu
+            positionWatchId = navigator.geolocation.watchPosition(
+                handlePositionUpdate,
+                handlePositionError,
+                {
+                    enableHighAccuracy: GPS_CONFIG.highAccuracy,
+                    maximumAge: GPS_CONFIG.maximumAge,
+                    timeout: GPS_CONFIG.timeout
+                }
+            );
+            
+            document.getElementById('auto-gps').classList.add('active');
+            document.getElementById('location-status').classList.add('active');
+            showNotification("Suivi GPS haute précision activé", "gps");
+            
+            console.log("Suivi GPS démarré avec ID:", positionWatchId);
+        }
+        
+        function handlePositionUpdate(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            const speed = position.coords.speed || 0;
+            const altitude = position.coords.altitude || 0;
+            const heading = position.coords.heading || 0;
+            const timestamp = new Date(position.timestamp);
+            
+            // Vérifier si le point est suffisamment éloigné du précédent
+            let shouldRecord = true;
+            if (lastPosition) {
+                const distance = calculateDistance(
+                    lastPosition.lat, lastPosition.lng,
+                    lat, lng
+                );
+                shouldRecord = distance >= GPS_CONFIG.minDistance;
+            }
+            
+            if (shouldRecord) {
+                // Mettre à jour la dernière position
+                lastPosition = {
+                    lat, lng, accuracy, speed, altitude, heading, timestamp
+                };
+                
+                // Mettre à jour l'affichage
+                updatePositionDisplay(lastPosition);
+                
+                // Mettre à jour la carte
+                updateMapPosition(lastPosition);
+                
+                // Mettre à jour l'historique
+                updatePositionHistory(lastPosition);
+                
+                // Si le suivi automatique est activé, centrer la carte
+                if (autoCenterEnabled && autoTrackingEnabled) {
+                    map.setView([lat, lng], GPS_CONFIG.autoCenterZoom);
+                }
+                
+                // Mettre à jour la distance totale parcourue
+                updateTotalDistance();
+                
+                // Auto-partage WhatsApp
+                if (autoWhatsAppEnabled) {
+                    autoSharePosition();
+                }
+            }
+        }
+        
+        function handlePositionError(error) {
+            let message = "Erreur GPS: ";
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = "Permission GPS refusée. Veuillez activer la localisation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = "Position non disponible. Vérifiez votre connexion GPS.";
+                    break;
+                case error.TIMEOUT:
+                    message = "Délai dépassé pour la localisation.";
+                    break;
+                default:
+                    message = "Erreur inconnue du GPS.";
+            }
+            
+            document.getElementById('gps-status').textContent = "GPS: ERREUR";
+            document.getElementById('system-status-text').textContent = message;
+            document.getElementById('location-status').classList.remove('active', 'tracking', 'position');
+            
+            showNotification(message, "warning");
+        }
+        
+        function updateTotalDistance() {
+            if (positionHistory.length < 2) {
+                totalDistance = 0;
+                return;
+            }
+            
+            // Calculer la distance totale depuis le début
+            let distance = 0;
+            for (let i = 1; i < positionHistory.length; i++) {
+                const prev = positionHistory[i-1];
+                const curr = positionHistory[i];
+                distance += calculateDistance(prev.lat, prev.lng, curr.lat, curr.lng);
+            }
+            
+            totalDistance = distance;
+            document.getElementById('metric-distance').textContent = distance.toFixed(2);
+        }
+        
+        // =================== FONCTIONS DE CALCUL ===================
+        
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            // Formule de Haversine pour calculer la distance en km
+            const R = 6371;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function toRad(degrees) {
+            return degrees * Math.PI / 180;
+        }
+        
+        function calculatePolylineDistance(latlngs) {
+            let totalDistance = 0;
+            for (let i = 1; i < latlngs.length; i++) {
+                totalDistance += calculateDistance(
+                    latlngs[i-1].lat, latlngs[i-1].lng,
+                    latlngs[i].lat, latlngs[i].lng
+                );
+            }
+            return totalDistance;
+        }
+        
+        function calculatePolygonArea(latlngs) {
+            // Calcul de l'aire d'un polygone (en m²)
+            let area = 0;
+            const len = latlngs.length;
+            
+            for (let i = 0; i < len; i++) {
+                const j = (i + 1) % len;
+                const xi = latlngs[i].lng * Math.PI / 180;
+                const yi = latlngs[i].lat * Math.PI / 180;
+                const xj = latlngs[j].lng * Math.PI / 180;
+                const yj = latlngs[j].lat * Math.PI / 180;
+                
+                area += (xj - xi) * (2 + Math.sin(yi) + Math.sin(yj));
+            }
+            
+            area = Math.abs(area * 6378137 * 6378137 / 2);
+            return area;
+        }
+        
+        function calculateRectangleArea(bounds) {
+            // Calcul de l'aire d'un rectangle (en m²)
+            const ne = bounds.getNorthEast();
+            const sw = bounds.getSouthWest();
+            
+            // Calculer la distance en degrés
+            const latDiff = ne.lat - sw.lat;
+            const lngDiff = ne.lng - sw.lng;
+            
+            // Convertir en mètres (approximation)
+            const latDist = latDiff * 111320;
+            const lngDist = lngDiff * 111320 * Math.cos((ne.lat + sw.lat) * Math.PI / 360);
+            
+            return Math.abs(latDist * lngDist);
+        }
+        
+        // =================== FONCTIONS DE CALCUL DE DISTANCE ===================
+        
+        function addDistancePoint(latlng) {
+            if (!distancePoints.pointA) {
+                // Premier point
+                distancePoints.pointA = latlng;
+                
+                // Ajouter un marqueur
+                const marker = L.marker(latlng, {
+                    icon: L.divIcon({
+                        className: 'distance-marker',
+                        html: '<div style="background-color: #FF5722; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">A</div>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                }).addTo(map);
+                
+                distanceMarkers.push(marker);
+                
+                // Mettre à jour l'interface
+                document.getElementById('point-a-input').value = 
+                    `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+                
+                showNotification("Point A défini", "gps");
+                
+            } else if (!distancePoints.pointB) {
+                // Deuxième point
+                distancePoints.pointB = latlng;
+                
+                // Ajouter un marqueur
+                const marker = L.marker(latlng, {
+                    icon: L.divIcon({
+                        className: 'distance-marker',
+                        html: '<div style="background-color: #0066FF; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">B</div>',
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 15]
+                    })
+                }).addTo(map);
+                
+                distanceMarkers.push(marker);
+                
+                // Mettre à jour l'interface
+                document.getElementById('point-b-input').value = 
+                    `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+                
+                // Calculer et afficher la distance
+                calculateAndDisplayDistance();
+                
+                showNotification("Point B défini - Distance calculée", "gps");
+                
+            } else {
+                // Réinitialiser et recommencer
+                clearDistancePoints();
+                addDistancePoint(latlng);
+            }
+        }
+        
+        function calculateAndDisplayDistance() {
+            if (!distancePoints.pointA || !distancePoints.pointB) {
+                showNotification("Veuillez définir deux points", "warning");
+                return;
+            }
+            
+            // Calculer la distance
+            const distance = calculateDistance(
+                distancePoints.pointA.lat, distancePoints.pointA.lng,
+                distancePoints.pointB.lat, distancePoints.pointB.lng
+            );
+            
+            // Afficher la distance
+            document.getElementById('distance-value').textContent = `${distance.toFixed(3)} km`;
+            
+            // Ajouter une ligne entre les points
+            if (distanceLine) {
+                map.removeLayer(distanceLine);
+            }
+            
+            distanceLine = L.polyline([distancePoints.pointA, distancePoints.pointB], {
+                color: '#8B0000',
+                weight: 3,
+                dashArray: '10, 5',
+                opacity: 0.8
+            }).addTo(map);
+            
+            // Ajouter un label avec la distance
+            const midPoint = [
+                (distancePoints.pointA.lat + distancePoints.pointB.lat) / 2,
+                (distancePoints.pointA.lng + distancePoints.pointB.lng) / 2
+            ];
+            
+            const labelMarker = L.marker(midPoint, {
+                icon: L.divIcon({
+                    className: 'distance-label',
+                    html: `<div style="background: white; padding: 5px 10px; border-radius: 4px; border: 2px solid #8B0000; font-weight: bold; color: #8B0000;">${distance.toFixed(2)} km</div>`,
+                    iconSize: null,
+                    iconAnchor: [0, 0]
+                })
+            }).addTo(map);
+            
+            distanceMarkers.push(labelMarker);
+        }
+        
+        function generateRoute() {
+            if (!distancePoints.pointA || !distancePoints.pointB) {
+                showNotification("Veuillez définir deux points", "warning");
+                return;
+            }
+            
+            showNotification("Génération du trajet en cours...", "route");
+            
+            // Utiliser l'API OSRM pour générer un trajet
+            const url = `https://router.project-osrm.org/route/v1/driving/${distancePoints.pointA.lng},${distancePoints.pointA.lat};${distancePoints.pointB.lng},${distancePoints.pointB.lat}?overview=full&geometries=geojson`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.routes && data.routes.length > 0) {
+                        const route = data.routes[0];
+                        const distance = (route.distance / 1000).toFixed(2);
+                        const duration = Math.floor(route.duration / 60);
+                        
+                        // Afficher le trajet
+                        if (distanceLine) {
+                            map.removeLayer(distanceLine);
+                        }
+                        
+                        const routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+                        distanceLine = L.polyline(routeCoordinates, {
+                            color: '#8B0000',
+                            weight: 5,
+                            opacity: 0.8,
+                            lineCap: 'round',
+                            lineJoin: 'round'
+                        }).addTo(map);
+                        
+                        // Mettre à jour les informations
+                        document.getElementById('distance-value').textContent = `${distance} km`;
+                        document.getElementById('distance-details').innerHTML = `
+                            <div>Distance routière: ${distance} km</div>
+                            <div>Temps estimé: ${duration} min</div>
+                        `;
+                        
+                        showNotification("Trajet généré avec succès", "route");
+                    } else {
+                        showNotification("Impossible de générer le trajet", "warning");
+                    }
+                })
+                .catch(error => {
+                    console.error("Erreur lors de la génération du trajet:", error);
+                    showNotification("Erreur de génération de trajet", "warning");
+                });
+        }
+        
+        function clearDistancePoints() {
+            // Supprimer les marqueurs
+            distanceMarkers.forEach(marker => {
+                if (marker && map.hasLayer(marker)) {
+                    map.removeLayer(marker);
+                }
+            });
+            distanceMarkers = [];
+            
+            // Supprimer la ligne
+            if (distanceLine && map.hasLayer(distanceLine)) {
+                map.removeLayer(distanceLine);
+                distanceLine = null;
+            }
+            
+            // Réinitialiser les points
+            distancePoints = { pointA: null, pointB: null };
+            
+            // Réinitialiser l'interface
+            document.getElementById('point-a-input').value = '';
+            document.getElementById('point-b-input').value = '';
+            document.getElementById('distance-value').textContent = '0.0 km';
+            document.getElementById('distance-details').textContent = 'Distance en ligne droite';
+            
+            showNotification("Points de mesure effacés", "gps");
+        }
+        
+        // =================== FONCTIONS POINTS MULTIPLES ===================
+        
+        function toggleMultiPointsMode() {
+            multiPointsMode = !multiPointsMode;
+            
+            if (multiPointsMode) {
+                document.getElementById('multi-point').classList.add('active');
+                clearMultiPoints();
+                showNotification("Mode points multiples activé - Cliquez pour ajouter des points", "route");
+            } else {
+                document.getElementById('multi-point').classList.remove('active');
+                clearMultiPoints();
+                showNotification("Mode points multiples désactivé", "route");
+            }
+        }
+        
+        function addMultiPoint(latlng) {
+            multiPoints.push(latlng);
+            
+            // Ajouter un marqueur
+            const marker = L.marker(latlng, {
+                icon: L.divIcon({
+                    className: 'multi-point-marker',
+                    html: `<div style="background-color: #FF5722; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">${multiPoints.length}</div>`,
+                    iconSize: [25, 25],
+                    iconAnchor: [12.5, 12.5]
+                })
+            }).addTo(map);
+            
+            distanceMarkers.push(marker);
+            
+            // Mettre à jour la ligne
+            updateMultiPointsLine();
+            
+            // Calculer la distance totale
+            calculateMultiPointsDistance();
+            
+            showNotification(`Point ${multiPoints.length} ajouté`, "route");
+        }
+        
+        function updateMultiPointsLine() {
+            if (multiPoints.length > 1) {
+                if (multiPointsLine) {
+                    map.removeLayer(multiPointsLine);
+                }
+                
+                multiPointsLine = L.polyline(multiPoints, {
+                    color: '#8B0000',
+                    weight: 3,
+                    dashArray: '5, 5',
+                    opacity: 0.7
+                }).addTo(map);
+            }
+        }
+        
+        function calculateMultiPointsDistance() {
+            if (multiPoints.length < 2) return;
+            
+            let totalDistance = 0;
+            for (let i = 1; i < multiPoints.length; i++) {
+                totalDistance += calculateDistance(
+                    multiPoints[i-1].lat, multiPoints[i-1].lng,
+                    multiPoints[i].lat, multiPoints[i].lng
+                );
+            }
+            
+            document.getElementById('distance-value').textContent = `${totalDistance.toFixed(3)} km`;
+            document.getElementById('distance-details').textContent = `Distance totale: ${totalDistance.toFixed(2)} km (${multiPoints.length} points)`;
+        }
+        
+        function clearMultiPoints() {
+            multiPoints = [];
+            
+            if (multiPointsLine) {
+                map.removeLayer(multiPointsLine);
+                multiPointsLine = null;
+            }
+            
+            // Supprimer les marqueurs de points multiples
+            distanceMarkers.forEach(marker => {
+                if (marker && map.hasLayer(marker)) {
+                    map.removeLayer(marker);
+                }
+            });
+            distanceMarkers = [];
+            
+            document.getElementById('distance-value').textContent = '0.0 km';
+            document.getElementById('distance-details').textContent = 'Distance en ligne droite';
+        }
+        
+        // =================== FONCTIONS DE MODIFICATION DE CARTE ===================
+        
+        function toggleDrawTools() {
+            isDrawing = !isDrawing;
+            const drawTools = document.getElementById('draw-tools');
+            
+            if (isDrawing) {
+                drawTools.classList.add('active');
+                map.addControl(drawControl);
+                document.getElementById('toggle-draw').classList.add('active');
+                showNotification("Outils de dessin activés", "gps");
+            } else {
+                drawTools.classList.remove('active');
+                map.removeControl(drawControl);
+                document.getElementById('toggle-draw').classList.remove('active');
+                showNotification("Outils de dessin désactivés", "gps");
+            }
+        }
+        
+        function setDrawMode(mode) {
+            currentDrawMode = mode;
+            showNotification(`Mode ${mode} activé - Cliquez sur la carte`, "gps");
+        }
+        
+        function addManualMarker(latlng) {
+            const marker = L.marker(latlng, {
+                icon: L.divIcon({
+                    className: 'manual-marker',
+                    html: '<i class="fas fa-map-marker-alt" style="color: #DC143C; font-size: 32px;"></i>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32]
+                })
+            }).addTo(map);
+            
+            marker.bindPopup(`
+                <div style="min-width: 200px;">
+                    <h4 style="margin: 0 0 10px 0; color: #DC143C;">
+                        <i class="fas fa-map-marker-alt"></i> MARQUEUR
+                    </h4>
+                    <div style="font-size: 0.9rem;">
+                        <div><strong>Latitude:</strong> ${latlng.lat.toFixed(6)}°</div>
+                        <div><strong>Longitude:</strong> ${latlng.lng.toFixed(6)}°</div>
+                    </div>
+                </div>
+            `).openPopup();
+            
+            drawnItems.addLayer(marker);
+            showNotification("Marqueur ajouté", "gps");
+        }
+        
+        function clearAllDrawings() {
+            drawnItems.clearLayers();
+            showNotification("Tous les dessins ont été effacés", "gps");
+        }
+        
+        // =================== FONCTIONS WHATSAPP ===================
+        
+        function sendWhatsAppPosition() {
+            if (!lastPosition) {
+                showNotification("Aucune position disponible", "warning");
+                return;
+            }
+            
+            const message = createWhatsAppMessage(lastPosition);
+            const url = `https://wa.me/${GPS_CONFIG.whatsappPhone}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+            
+            showNotification("Position partagée sur WhatsApp", "whatsapp");
+        }
+        
+        function createWhatsAppMessage(position) {
+            const time = position.timestamp.toLocaleTimeString();
+            const date = position.timestamp.toLocaleDateString();
+            const speedKmh = (position.speed * 3.6).toFixed(1);
+            const accuracy = position.accuracy ? position.accuracy.toFixed(0) : "Inconnue";
+            
+            return `📍 *POSITION GPS LIVE - FORCES ARMÉES TOGOLAISES* 📍
+
+📅 Date: ${date}
+⏰ Heure: ${time}
+
+📍 *Coordonnées GPS:*
+Latitude: ${position.lat.toFixed(6)}
+Longitude: ${position.lng.toFixed(6)}
+Précision: ±${accuracy}m
+Vitesse: ${speedKmh} km/h
+
+🗺️ *Liens de localisation:*
+Google Maps: https://maps.google.com/?q=${position.lat},${position.lng}
+OpenStreetMap: https://www.openstreetmap.org/#map=16/${position.lat}/${position.lng}
+
+📍 *Navigation rapide:*
+https://www.google.com/maps/dir/?api=1&destination=${position.lat},${position.lng}
+
+⚠️ *Système militaire FAT - Suivi en temps réel*
+Généré automatiquement par GeoHISTORY Pro MIL`;
+        }
+        
+        function toggleAutoWhatsApp() {
+            autoWhatsAppEnabled = !autoWhatsAppEnabled;
+            
+            if (autoWhatsAppEnabled) {
+                document.getElementById('auto-whatsapp').classList.add('active');
+                showNotification("Auto-partage WhatsApp activé", "whatsapp");
+            } else {
+                document.getElementById('auto-whatsapp').classList.remove('active');
+                showNotification("Auto-partage WhatsApp désactivé", "whatsapp");
+            }
+        }
+        
+        function autoSharePosition() {
+            // Envoyer automatiquement la position toutes les 5 minutes
+            const lastShare = localStorage.getItem('lastAutoShare');
+            const now = new Date().getTime();
+            
+            if (!lastShare || (now - parseInt(lastShare)) > 300000) { // 5 minutes
+                sendWhatsAppPosition();
+                localStorage.setItem('lastAutoShare', now.toString());
+            }
+        }
+        
+        // =================== FONCTIONS D'INTERFACE ===================
+        
+        function toggleMeasureMode() {
+            isMeasuring = !isMeasuring;
+            const distancePanel = document.getElementById('distance-panel');
+            
+            if (isMeasuring) {
+                distancePanel.classList.add('active');
+                document.getElementById('toggle-measure').classList.add('active');
+                showNotification("Mode mesure activé - Cliquez sur la carte pour définir les points", "gps");
+            } else {
+                distancePanel.classList.remove('active');
+                document.getElementById('toggle-measure').classList.remove('active');
+                clearDistancePoints();
+                clearMultiPoints();
+                showNotification("Mode mesure désactivé", "gps");
+            }
+        }
+        
+        function toggleAutoTracking() {
+            autoTrackingEnabled = !autoTrackingEnabled;
+            
+            if (autoTrackingEnabled) {
+                document.getElementById('tracking-toggle').innerHTML = '<i class="fas fa-stop"></i> ARRÊTER';
+                document.getElementById('tracking-toggle').classList.add('tracking');
+                document.getElementById('location-status').classList.add('tracking');
+                document.getElementById('live-tracking').classList.add('active');
+                showNotification("Suivi automatique activé", "tracking");
+            } else {
+                document.getElementById('tracking-toggle').innerHTML = '<i class="fas fa-play"></i> DÉMARRER';
+                document.getElementById('tracking-toggle').classList.remove('tracking');
+                document.getElementById('location-status').classList.remove('tracking');
+                document.getElementById('live-tracking').classList.remove('active');
+                showNotification("Suivi automatique désactivé", "tracking");
+            }
+        }
+        
+        function toggleFullscreen() {
+            const mapContainer = document.getElementById('map-container');
+            
+            if (!document.fullscreenElement) {
+                mapContainer.classList.add('fullscreen');
+                if (mapContainer.requestFullscreen) {
+                    mapContainer.requestFullscreen();
+                } else if (mapContainer.webkitRequestFullscreen) {
+                    mapContainer.webkitRequestFullscreen();
+                } else if (mapContainer.msRequestFullscreen) {
+                    mapContainer.msRequestFullscreen();
+                }
+                isFullscreen = true;
+                document.getElementById('fullscreen-map').classList.add('active');
+                showNotification("Mode plein écran activé", "gps");
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+                mapContainer.classList.remove('fullscreen');
+                isFullscreen = false;
+                document.getElementById('fullscreen-map').classList.remove('active');
+                showNotification("Mode plein écran désactivé", "gps");
+            }
+        }
+        
+        function centerOnPosition() {
+            if (lastPosition) {
+                map.setView([lastPosition.lat, lastPosition.lng], GPS_CONFIG.autoCenterZoom);
+                showNotification("Centré sur votre position", "gps");
+            } else {
+                showNotification("Aucune position disponible", "warning");
+            }
+        }
+        
+        function updatePositionDisplay(position) {
+            // Mettre à jour le dashboard
+            document.getElementById('metric-position').textContent = 
+                `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`;
+            document.getElementById('metric-accuracy').textContent = 
+                position.accuracy ? position.accuracy.toFixed(0) : "--";
+            document.getElementById('metric-speed').textContent = 
+                position.speed ? (position.speed * 3.6).toFixed(1) : "0.0";
+            
+            // Mettre à jour la barre de statut
+            const accuracyText = position.accuracy ? `±${position.accuracy.toFixed(0)}m` : "Inconnue";
+            const speedText = position.speed ? `${(position.speed * 3.6).toFixed(1)} km/h` : "Stationnaire";
+            
+            document.getElementById('gps-status').textContent = 
+                `GPS: ${accuracyText} | ${speedText}`;
+            
+            document.getElementById('system-status-text').textContent = 
+                `GPS ACTIF | ${accuracyText} | ${speedText} | Distance: ${totalDistance.toFixed(2)} km`;
+            
+            document.getElementById('coordinates').textContent = 
+                `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`;
+        }
+        
+        function updateMapPosition(position) {
+            // Mettre à jour le marqueur de position
+            if (currentPositionMarker) {
+                map.removeLayer(currentPositionMarker);
+            }
+            
+            currentPositionMarker = L.marker([position.lat, position.lng], {
+                icon: L.divIcon({
+                    className: 'gps-marker',
+                    html: createPositionMarkerHTML(position.speed, position.heading),
+                    iconSize: [50, 50],
+                    iconAnchor: [25, 25]
+                })
+            }).addTo(map);
+            
+            // Mettre à jour le cercle de précision
+            if (accuracyCircle) {
+                map.removeLayer(accuracyCircle);
+            }
+            
+            if (position.accuracy) {
+                accuracyCircle = L.circle([position.lat, position.lng], {
+                    radius: position.accuracy,
+                    color: '#0066FF',
+                    fillColor: '#0066FF',
+                    fillOpacity: 0.1,
+                    weight: 1,
+                    dashArray: '5, 5'
+                }).addTo(map);
+            }
+        }
+        
+        function createPositionMarkerHTML(speed, heading) {
+            const speedClass = speed > 0 ? 'moving' : 'stationary';
+            
+            return `
+                <div class="position-marker ${speedClass}" style="position: relative;">
+                    <div style="
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 50px;
+                        height: 50px;
+                        background: radial-gradient(circle, rgba(0,102,255,0.8) 0%, rgba(0,102,255,0.4) 70%, transparent 100%);
+                        border-radius: 50%;
+                        border: 3px solid white;
+                        box-shadow: 0 0 15px rgba(0,102,255,0.5);
+                        animation: pulse-gps 2s infinite;
+                    ">
+                        <i class="fas fa-user" style="
+                            position: absolute;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%) rotate(${heading}deg);
+                            color: white;
+                            font-size: 20px;
+                        "></i>
+                    </div>
+                    ${speed > 0 ? `
+                    <div style="
+                        position: absolute;
+                        bottom: -5px;
+                        left: 50%;
+                        transform: translateX(-50%);
+                        background: #FF5722;
+                        color: white;
+                        padding: 2px 6px;
+                        border-radius: 10px;
+                        font-size: 10px;
+                        font-weight: bold;
+                        white-space: nowrap;
+                    ">
+                        ${(speed * 3.6).toFixed(0)} km/h
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
+        function updatePositionHistory(position) {
+            positionHistory.push({
+                lat: position.lat,
+                lng: position.lng,
+                timestamp: position.timestamp
+            });
+            
+            if (positionHistory.length > GPS_CONFIG.maxHistory) {
+                positionHistory.shift();
+            }
+            
+            // Mettre à jour le trajet parcouru
+            updatePositionPath();
+        }
+        
+        function updatePositionPath() {
+            // Créer ou mettre à jour le trajet
+            const pathPoints = positionHistory.map(p => [p.lat, p.lng]);
+            
+            if (pathPoints.length > 1) {
+                if (positionPath) {
+                    map.removeLayer(positionPath);
+                }
+                
+                positionPath = L.polyline(pathPoints, {
+                    color: '#0066FF',
+                    weight: 3,
+                    opacity: 0.7,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }).addTo(map);
+            }
+        }
+        
+        function showPositionInfo(latlng) {
+            // Créer un popup avec les informations de position
+            const popup = L.popup()
+                .setLatLng(latlng)
+                .setContent(`
+                    <div style="min-width: 250px;">
+                        <h4 style="margin: 0 0 10px 0; color: #006400;">
+                            <i class="fas fa-map-marker-alt"></i> COORDONNÉES
+                        </h4>
+                        <div style="font-size: 0.9rem; margin-bottom: 15px;">
+                            <div><strong>Latitude:</strong> ${latlng.lat.toFixed(6)}°</div>
+                            <div><strong>Longitude:</strong> ${latlng.lng.toFixed(6)}°</div>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="map.setView([${latlng.lat}, ${latlng.lng}], 16)" style="
+                                flex: 1;
+                                background: #006400;
+                                color: white;
+                                border: none;
+                                padding: 8px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-size: 0.8rem;
+                            ">
+                                <i class="fas fa-crosshairs"></i> Aller
+                            </button>
+                        </div>
+                    </div>
+                `)
+                .openOn(map);
+        }
+        
+        function showNotification(message, type = "gps") {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notification-message');
+            
+            messageElement.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('active');
+            
+            setTimeout(() => {
+                notification.classList.remove('active');
+            }, 3000);
+        }
+        
+        function showSystemStatus() {
+            const status = `
+                <div style="padding: 15px; min-width: 300px;">
+                    <h3 style="color: #006400; margin-bottom: 15px;">
+                        <i class="fas fa-heartbeat"></i> ÉTAT DU SYSTÈME
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <div>
+                            <strong>GPS:</strong> ${positionWatchId ? '🟢 ACTIF' : '🔴 INACTIF'}
+                        </div>
+                        <div>
+                            <strong>Suivi auto:</strong> ${autoTrackingEnabled ? '🟢 ON' : '🔴 OFF'}
+                        </div>
+                        <div>
+                            <strong>WhatsApp auto:</strong> ${autoWhatsAppEnabled ? '🟢 ON' : '🔴 OFF'}
+                        </div>
+                        <div>
+                            <strong>Mode mesure:</strong> ${isMeasuring ? '🟢 ACTIF' : '🔴 INACTIF'}
+                        </div>
+                        <div>
+                            <strong>Mode dessin:</strong> ${isDrawing ? '🟢 ACTIF' : '🔴 INACTIF'}
+                        </div>
+                        <div>
+                            <strong>Plein écran:</strong> ${isFullscreen ? '🟢 ACTIF' : '🔴 INACTIF'}
+                        </div>
+                    </div>
+                    <div style="background: #f5f5f5; padding: 10px; border-radius: 5px;">
+                        <div><strong>Dernière position:</strong> ${lastPosition ? lastPosition.timestamp.toLocaleTimeString() : 'Jamais'}</div>
+                        <div><strong>Distance parcourue:</strong> ${totalDistance.toFixed(2)} km</div>
+                        <div><strong>Points historiques:</strong> ${positionHistory.length}</div>
+                        <div><strong>Positions sauvegardées:</strong> ${savedPositions.length}</div>
+                    </div>
+                </div>
+            `;
+            
+            L.popup()
+                .setLatLng(lastPosition ? [lastPosition.lat, lastPosition.lng] : map.getCenter())
+                .setContent(status)
+                .openOn(map);
+        }
+        
+        function exportData() {
+            const data = {
+                positionHistory: positionHistory,
+                lastPosition: lastPosition,
+                totalDistance: totalDistance,
+                savedPositions: savedPositions,
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `geohistory_data_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification("Données exportées avec succès", "gps");
+        }
+        
+        function exportMeasurements() {
+            const measurements = {
+                distancePoints: distancePoints,
+                multiPoints: multiPoints,
+                timestamp: new Date().toISOString()
+            };
+            
+            const dataStr = JSON.stringify(measurements, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `measurements_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification("Mesures exportées avec succès", "route");
+        }
+        
+        function updateStatusDisplay() {
+            // Mettre à jour périodiquement l'affichage du statut
+            setInterval(() => {
+                if (lastPosition) {
+                    const age = new Date() - lastPosition.timestamp;
+                    const ageSeconds = Math.floor(age / 1000);
+                    
+                    if (ageSeconds > 30) {
+                        document.getElementById('gps-status').textContent = "GPS: DERNIÈRE POSITION";
+                    }
+                }
+            }, 5000);
+        }
+        
+        function startInterfaceUpdates() {
+            // Mettre à jour l'interface en temps réel
+            setInterval(() => {
+                if (lastPosition) {
+                    // Mettre à jour le marqueur d'animation
+                    updateMarkerAnimation(lastPosition);
+                }
+            }, 1000);
+        }
+        
+        function updateMarkerAnimation(position) {
+            // Mettre à jour l'animation du marqueur en fonction de la vitesse
+            if (currentPositionMarker && position.speed > 0) {
+                // Ajouter une classe pour l'animation de mouvement
+                const markerElement = currentPositionMarker.getElement();
+                if (markerElement) {
+                    markerElement.classList.add('moving');
+                }
+            }
+        }
+        
+        // =================== ÉVÉNEMENTS ===================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Document chargé, initialisation en cours...");
+            
+            // Initialiser la carte
+            initMilitaryMap();
+            
+            // =================== MA POSITION ===================
+            document.getElementById('find-my-position').addEventListener('click', findMyPosition);
+            document.getElementById('save-position').addEventListener('click', saveCurrentPosition);
+            document.getElementById('show-location-panel').addEventListener('click', showLocationPanel);
+            document.getElementById('show-my-position').addEventListener('click', toggleMyPositionDisplay);
+            document.getElementById('toggle-my-position').addEventListener('click', toggleMyPositionDisplay);
+            document.getElementById('update-position').addEventListener('click', findMyPosition);
+            document.getElementById('save-current-position').addEventListener('click', saveCurrentPosition);
+            document.getElementById('share-my-position').addEventListener('click', function() {
+                if (myPositionMarker) {
+                    const latlng = myPositionMarker.getLatLng();
+                    const message = `📍 MA POSITION: ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+                    const url = `https://wa.me/${GPS_CONFIG.whatsappPhone}?text=${encodeURIComponent(message)}`;
+                    window.open(url, '_blank');
+                    showNotification("Position partagée sur WhatsApp", "whatsapp");
+                }
+            });
+            document.getElementById('close-location').addEventListener('click', function() {
+                document.getElementById('location-panel').classList.remove('active');
+            });
+            
+            // =================== GPS ET SUIVI ===================
+            document.getElementById('auto-gps').addEventListener('click', startAutoGPS);
+            document.getElementById('live-tracking').addEventListener('click', toggleAutoTracking);
+            document.getElementById('tracking-toggle').addEventListener('click', toggleAutoTracking);
+            
+            // =================== PLEIN ÉCRAN ===================
+            document.getElementById('fullscreen-map').addEventListener('click', toggleFullscreen);
+            
+            // =================== MODIFICATION DE CARTE ===================
+            document.getElementById('draw-marker').addEventListener('click', function() {
+                setDrawMode('marker');
+                document.getElementById('draw-marker').classList.add('active');
+            });
+            document.getElementById('draw-polyline').addEventListener('click', function() {
+                toggleDrawTools();
+                document.getElementById('draw-polyline').classList.add('active');
+            });
+            document.getElementById('draw-polygon').addEventListener('click', function() {
+                toggleDrawTools();
+                document.getElementById('draw-polygon').classList.add('active');
+            });
+            document.getElementById('clear-drawings').addEventListener('click', clearAllDrawings);
+            document.getElementById('toggle-draw').addEventListener('click', toggleDrawTools);
+            
+            // =================== OUTILS DE DESSIN SPÉCIFIQUES ===================
+            document.getElementById('draw-tool-marker').addEventListener('click', function() {
+                setDrawMode('marker');
+                document.getElementById('draw-tool-marker').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('draw-tool-marker').classList.remove('active');
+                }, 300);
+            });
+            document.getElementById('draw-tool-polyline').addEventListener('click', function() {
+                map.removeControl(drawControl);
+                drawControl.setDrawingOptions({ polyline: true });
+                map.addControl(drawControl);
+                document.getElementById('draw-tool-polyline').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('draw-tool-polyline').classList.remove('active');
+                }, 300);
+            });
+            document.getElementById('draw-tool-polygon').addEventListener('click', function() {
+                map.removeControl(drawControl);
+                drawControl.setDrawingOptions({ polygon: true });
+                map.addControl(drawControl);
+                document.getElementById('draw-tool-polygon').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('draw-tool-polygon').classList.remove('active');
+                }, 300);
+            });
+            document.getElementById('draw-tool-circle').addEventListener('click', function() {
+                map.removeControl(drawControl);
+                drawControl.setDrawingOptions({ circle: true });
+                map.addControl(drawControl);
+                document.getElementById('draw-tool-circle').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('draw-tool-circle').classList.remove('active');
+                }, 300);
+            });
+            document.getElementById('draw-tool-rectangle').addEventListener('click', function() {
+                map.removeControl(drawControl);
+                drawControl.setDrawingOptions({ rectangle: true });
+                map.addControl(drawControl);
+                document.getElementById('draw-tool-rectangle').classList.add('active');
+                setTimeout(() => {
+                    document.getElementById('draw-tool-rectangle').classList.remove('active');
+                }, 300);
+            });
+            
+            // =================== CALCUL DE DISTANCE ===================
+            document.getElementById('measure-distance').addEventListener('click', toggleMeasureMode);
+            document.getElementById('generate-route').addEventListener('click', function() {
+                toggleMeasureMode();
+                setTimeout(() => {
+                    document.getElementById('distance-panel').classList.add('active');
+                }, 100);
+            });
+            document.getElementById('multi-point').addEventListener('click', toggleMultiPointsMode);
+            document.getElementById('toggle-measure').addEventListener('click', toggleMeasureMode);
+            document.getElementById('calculate-distance').addEventListener('click', calculateAndDisplayDistance);
+            document.getElementById('generate-route-btn').addEventListener('click', generateRoute);
+            document.getElementById('clear-points').addEventListener('click', function() {
+                clearDistancePoints();
+                clearMultiPoints();
+            });
+            document.getElementById('close-distance').addEventListener('click', function() {
+                document.getElementById('distance-panel').classList.remove('active');
+                isMeasuring = false;
+                multiPointsMode = false;
+                clearDistancePoints();
+                clearMultiPoints();
+                document.getElementById('multi-point').classList.remove('active');
+                document.getElementById('toggle-measure').classList.remove('active');
+            });
+            
+            // =================== EXPORT ===================
+            document.getElementById('export-measurements').addEventListener('click', exportMeasurements);
+            document.getElementById('export-data').addEventListener('click', exportData);
+            
+            // =================== CONTRÔLES DE CARTE ===================
+            document.getElementById('locate-me').addEventListener('click', centerOnPosition);
+            document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
+            document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+            document.getElementById('toggle-dashboard').addEventListener('click', toggleDashboard);
+            document.getElementById('close-dashboard').addEventListener('click', toggleDashboard);
+            document.getElementById('center-position').addEventListener('click', centerOnPosition);
+            document.getElementById('quick-share').addEventListener('click', sendWhatsAppPosition);
+            
+            // =================== WHATSAPP ===================
+            document.getElementById('whatsapp-share').addEventListener('click', sendWhatsAppPosition);
+            document.getElementById('auto-whatsapp').addEventListener('click', toggleAutoWhatsApp);
+            
+            // =================== SYSTÈME ===================
+            document.getElementById('system-status').addEventListener('click', showSystemStatus);
+            document.getElementById('reset-system').addEventListener('click', function() {
+                if (confirm("Voulez-vous vraiment réinitialiser le système ? Toutes les données seront perdues.")) {
+                    location.reload();
+                }
+            });
+            
+            // =================== MODE SÉLECTEUR ===================
+            document.getElementById('mode-select').addEventListener('change', function() {
+                const mode = this.value;
+                
+                switch(mode) {
+                    case 'position':
+                        findMyPosition();
+                        showNotification("Mode position activé", "position");
+                        break;
+                    case 'gps':
+                        startAutoGPS();
+                        showNotification("Mode GPS activé", "gps");
+                        break;
+                    case 'tracking':
+                        if (!autoTrackingEnabled) {
+                            toggleAutoTracking();
+                        }
+                        showNotification("Mode suivi activé", "tracking");
+                        break;
+                    case 'measure':
+                        toggleMeasureMode();
+                        break;
+                    case 'edit':
+                        toggleDrawTools();
+                        break;
+                }
+            });
+            
+            // =================== GESTION DU PLEIN ÉCRAN ===================
+            document.addEventListener('fullscreenchange', function() {
+                const mapContainer = document.getElementById('map-container');
+                if (!document.fullscreenElement) {
+                    mapContainer.classList.remove('fullscreen');
+                    isFullscreen = false;
+                    document.getElementById('fullscreen-map').classList.remove('active');
+                }
+            });
+            
+            document.addEventListener('webkitfullscreenchange', function() {
+                const mapContainer = document.getElementById('map-container');
+                if (!document.webkitFullscreenElement) {
+                    mapContainer.classList.remove('fullscreen');
+                    isFullscreen = false;
+                    document.getElementById('fullscreen-map').classList.remove('active');
+                }
+            });
+            
+            document.addEventListener('msfullscreenchange', function() {
+                const mapContainer = document.getElementById('map-container');
+                if (!document.msFullscreenElement) {
+                    mapContainer.classList.remove('fullscreen');
+                    isFullscreen = false;
+                    document.getElementById('fullscreen-map').classList.remove('active');
+                }
+            });
+            
+            // =================== FONCTION TOGGLE DASHBOARD ===================
+            function toggleDashboard() {
+                const dashboard = document.getElementById('gps-dashboard');
+                const isVisible = dashboard.style.display !== 'none';
+                
+                if (isVisible) {
+                    dashboard.style.display = 'none';
+                    document.getElementById('toggle-dashboard').classList.remove('active');
+                } else {
+                    dashboard.style.display = 'block';
+                    document.getElementById('toggle-dashboard').classList.add('active');
+                }
+            }
+            
+            // Initialisation terminée
+            setTimeout(() => {
+                showNotification("Système de suivi GPS prêt. Cliquez sur 'Localiser Moi' pour trouver votre position.", "gps");
+                console.log("Initialisation terminée avec succès");
+            }, 2000);
+        });
+        
+        // Nettoyage à la fermeture
+        window.addEventListener('beforeunload', function() {
+            if (positionWatchId && navigator.geolocation) {
+                navigator.geolocation.clearWatch(positionWatchId);
+                console.log("Surveillance GPS arrêtée");
+            }
+        });
+    </script>
+</body>
+</html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
