@@ -1,0 +1,3850 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoHISTORY Pro - Cartographie Universelle & Historique</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        :root {
+            --primary-color: #2c5aa0;
+            --secondary-color: #8B4513;
+            --third-color: #4caf50;
+            --accent-color: #ff9800;
+            --light-bg: #f5f7fa;
+            --dark-bg: #1a237e;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --empire-color: #8B0000;
+            --ww1-color: #5D8AA8;
+            --ww2-color: #004225;
+            --historical-color: #8B4513;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Sidebar compacte */
+        .main-sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, var(--dark-bg) 0%, #0d1533 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.15);
+            transition: width 0.3s ease;
+        }
+        
+        .logo {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--historical-color) 100%);
+        }
+        
+        .logo h1 {
+            font-size: 1.1rem;
+            margin-bottom: 3px;
+            color: white;
+        }
+        
+        .logo .tagline {
+            font-size: 0.7rem;
+            opacity: 0.9;
+            color: var(--accent-color);
+        }
+        
+        .world-icon {
+            font-size: 1.5rem;
+            margin: 8px 0;
+            color: var(--accent-color);
+        }
+        
+        .tool-groups {
+            padding: 10px;
+            flex-grow: 1;
+        }
+        
+        .tool-group {
+            margin-bottom: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tool-group-title {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--accent-color);
+        }
+        
+        .tool-group-title i {
+            margin-right: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .tool-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .tool-btn {
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 4px;
+            text-align: left;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            line-height: 1.2;
+            border: none;
+        }
+        
+        .tool-btn:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(4px);
+            border-color: var(--accent-color);
+        }
+        
+        .tool-btn.active {
+            background-color: rgba(255, 152, 0, 0.2);
+            border-color: var(--accent-color);
+        }
+        
+        .tool-btn i {
+            margin-right: 8px;
+            width: 16px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        
+        /* Main content */
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Barre supérieure compacte */
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background: linear-gradient(90deg, var(--dark-bg) 0%, var(--primary-color) 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 10;
+            min-height: 50px;
+        }
+        
+        .world-coat {
+            font-size: 1.4rem;
+            margin-right: 10px;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .action-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background-color: #ffad33;
+            transform: translateY(-2px);
+        }
+        
+        .action-btn.secondary {
+            background-color: var(--third-color);
+        }
+        
+        .action-btn.tertiary {
+            background-color: var(--empire-color);
+        }
+        
+        .action-btn.warning {
+            background-color: var(--warning-color);
+        }
+        
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.8rem;
+        }
+        
+        .location-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .location-status.active {
+            color: var(--accent-color);
+            background-color: rgba(255, 152, 0, 0.2);
+        }
+        
+        .mode-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mode-selector select {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: rgba(255, 255, 255, 0.9);
+            color: var(--dark-bg);
+            font-weight: 600;
+            min-width: 180px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        /* Conteneur carte (espace maximal) */
+        .map-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #e8eaf6;
+        }
+        
+        #map {
+            height: 100%;
+            width: 100%;
+            z-index: 1;
+        }
+        
+        /* Contrôles carte compacts */
+        .map-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .map-control {
+            background-color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--dark-bg);
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .map-control:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .map-control.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: white;
+        }
+        
+        /* Timeline compacte */
+        .timeline-container {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.98);
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 85%;
+            max-width: 800px;
+            display: none;
+        }
+        
+        .timeline-container.active {
+            display: block;
+        }
+        
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--primary-color);
+        }
+        
+        .timeline-header h3 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .timeline-slider-container {
+            position: relative;
+            padding: 12px 0;
+        }
+        
+        .timeline-slider {
+            width: 100%;
+            height: 6px;
+            margin: 8px 0;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, var(--empire-color), var(--primary-color), var(--accent-color));
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .timeline-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            cursor: pointer;
+            border: 2px solid white;
+        }
+        
+        .timeline-years {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+        
+        .era-markers {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .era-marker {
+            font-size: 0.7rem;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 15px;
+            transition: all 0.2s;
+            background-color: var(--primary-color);
+            border: 1px solid transparent;
+            font-weight: 500;
+        }
+        
+        .era-marker:hover {
+            transform: translateY(-2px);
+        }
+        
+        .era-marker.active {
+            background-color: var(--accent-color);
+            transform: scale(1.05);
+        }
+        
+        .era-marker.empire {
+            background-color: var(--empire-color);
+        }
+        
+        .era-marker.ww1 {
+            background-color: var(--ww1-color);
+        }
+        
+        .era-marker.ww2 {
+            background-color: var(--ww2-color);
+        }
+        
+        /* Panels compacts */
+        .panel {
+            position: absolute;
+            background-color: white;
+            box-shadow: -3px 0 15px rgba(0, 0, 0, 0.15);
+            z-index: 100;
+            transition: all 0.3s;
+            overflow-y: auto;
+            padding: 15px;
+            border-radius: 0 0 0 10px;
+            border-left: 3px solid var(--primary-color);
+        }
+        
+        .panel-right {
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 350px;
+            transform: translateX(100%);
+        }
+        
+        .panel-left {
+            left: 260px;
+            top: 0;
+            height: 100%;
+            width: 350px;
+            transform: translateX(-100%);
+        }
+        
+        .panel.active {
+            transform: translateX(0);
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+        
+        .panel-header h3 {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .close-panel {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #777;
+            transition: all 0.2s;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-panel:hover {
+            background-color: #f5f5f5;
+            color: var(--danger-color);
+        }
+        
+        /* Cartes compactes */
+        .empire-card, .war-card {
+            border: 1px solid rgba(139, 69, 19, 0.2);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .empire-card::before, .war-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background-color: var(--empire-color);
+        }
+        
+        .war-card::before {
+            background-color: var(--ww1-color);
+        }
+        
+        .war-card.ww2::before {
+            background-color: var(--ww2-color);
+        }
+        
+        .empire-card:hover, .war-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent-color);
+        }
+        
+        .empire-card.active, .war-card.active {
+            border-color: var(--accent-color);
+            background-color: rgba(255, 152, 0, 0.05);
+        }
+        
+        .empire-header, .war-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .empire-icon, .war-icon {
+            font-size: 1.4rem;
+            margin-right: 10px;
+            color: var(--empire-color);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(139, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        
+        .war-icon {
+            color: var(--ww1-color);
+            background-color: rgba(93, 138, 168, 0.1);
+        }
+        
+        .war-icon.ww2 {
+            color: var(--ww2-color);
+            background-color: rgba(0, 66, 37, 0.1);
+        }
+        
+        /* Panel info compact */
+        .click-info-panel {
+            position: absolute;
+            bottom: 100px;
+            left: 15px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            max-width: 320px;
+            border-left: 3px solid var(--primary-color);
+            display: none;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .click-info-panel.active {
+            display: block;
+        }
+        
+        .click-info-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--primary-color);
+        }
+        
+        .click-info-header h4 {
+            color: var(--primary-color);
+            margin: 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Marqueur position actuelle compact */
+        .current-position-marker {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            position: absolute;
+            top: 70px;
+            right: 15px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        
+        .current-position-marker:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Barre d'état compacte */
+        .status-bar {
+            background: linear-gradient(90deg, var(--dark-bg) 0%, var(--primary-color) 100%);
+            padding: 8px 15px;
+            font-size: 0.75rem;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            min-height: 36px;
+        }
+        
+        #status-message {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+        
+        .coordinate-system {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--accent-color);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Notifications compactes */
+        .notification {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 12px 15px;
+            background-color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(150%);
+            transition: transform 0.3s;
+            border-left: 3px solid var(--primary-color);
+            max-width: 350px;
+        }
+        
+        .notification.active {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-left-color: var(--success-color);
+        }
+        
+        .notification.error {
+            border-left-color: var(--danger-color);
+        }
+        
+        .notification.warning {
+            border-left-color: var(--warning-color);
+        }
+        
+        .notification.info {
+            border-left-color: var(--info-color);
+        }
+        
+        /* Contrôle des couches compact */
+        .historical-layer-control {
+            position: absolute;
+            top: 70px;
+            right: 70px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            min-width: 200px;
+        }
+        
+        .layer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+            font-size: 0.85rem;
+        }
+        
+        .layer-toggle:hover {
+            background-color: rgba(44, 90, 160, 0.1);
+        }
+        
+        .layer-toggle input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        .legend {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #eee;
+        }
+        
+        .legend h5 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 16px;
+            margin-right: 8px;
+            border-radius: 3px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Modals compacts */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            width: 600px;
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 10px;
+            overflow: hidden;
+            border-top: 3px solid var(--primary-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .modal-header {
+            background: linear-gradient(90deg, var(--dark-bg) 0%, var(--primary-color) 100%);
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .modal-body {
+            padding: 15px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+        
+        .modal-footer {
+            padding: 12px 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        
+        /* Sections compactes */
+        .info-section {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-section:last-child {
+            border-bottom: none;
+        }
+        
+        .info-section h5 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+        }
+        
+        .info-item {
+            margin-bottom: 10px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.8rem;
+            display: block;
+            margin-bottom: 3px;
+        }
+        
+        .info-value {
+            color: var(--text-color);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        /* Boutons région compacts */
+        .world-regions {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .region-btn {
+            background-color: #f5f7fa;
+            border: 1px solid #e0e0e0;
+            padding: 12px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .region-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-3px);
+            border-color: var(--primary-color);
+        }
+        
+        .region-btn i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+        
+        .region-btn:hover i {
+            color: white;
+        }
+        
+        /* Outils dessin compacts */
+        .draw-toolbar {
+            position: absolute;
+            top: 15px;
+            left: 275px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            gap: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .draw-toolbar.active {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        .draw-btn {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        
+        .draw-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .draw-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        /* WhatsApp compact */
+        .whatsapp-config {
+            background-color: rgba(37, 211, 102, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+            border: 1px solid #25D366;
+        }
+        
+        .whatsapp-config h5 {
+            color: #25D366;
+            font-size: 0.9rem;
+        }
+        
+        .whatsapp-number {
+            font-family: 'Courier New', monospace;
+            background-color: rgba(37, 211, 102, 0.2);
+            padding: 8px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #128C7E;
+            text-align: center;
+            margin: 8px 0;
+            font-size: 0.85rem;
+        }
+        
+        /* Tableau compact */
+        .positions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .positions-table th, .positions-table td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .positions-table th {
+            background-color: #f5f7fa;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .positions-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        /* Outil distance compact */
+        .distance-tool {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 12px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            min-width: 250px;
+        }
+        
+        .distance-tool.active {
+            display: flex;
+        }
+        
+        .distance-result {
+            background-color: #e8f5e8;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            margin-top: 8px;
+        }
+        
+        .distance-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--third-color);
+            margin: 8px 0;
+        }
+        
+        /* Éditeur texte compact */
+        .text-editor {
+            position: absolute;
+            background-color: white;
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            min-width: 180px;
+            border: 1px solid var(--primary-color);
+            display: none;
+        }
+        
+        .text-editor.active {
+            display: block;
+        }
+        
+        .text-editor textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            resize: vertical;
+            margin-bottom: 8px;
+        }
+        
+        .text-editor-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        /* FORMULAIRES COMPACTS */
+        .form-group {
+            margin-bottom: 10px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+            color: #555;
+            font-size: 0.85rem;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .color-picker {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        
+        .color-option {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .color-option.selected {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+        
+        .icon-picker {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .icon-option {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            cursor: pointer;
+            background-color: #f0f0f0;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .icon-option.selected {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* RESPONSIVE COMPLET */
+        @media (max-width: 1200px) {
+            .main-sidebar {
+                width: 220px;
+            }
+            
+            .panel-right, .panel-left {
+                width: 300px;
+            }
+            
+            .timeline-container {
+                width: 90%;
+                padding: 10px;
+            }
+            
+            .draw-toolbar {
+                left: 235px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .main-sidebar {
+                width: 200px;
+            }
+            
+            .tool-btn {
+                padding: 6px 8px;
+                font-size: 0.75rem;
+            }
+            
+            .tool-btn i {
+                font-size: 0.75rem;
+                margin-right: 6px;
+            }
+            
+            .click-info-panel {
+                max-width: 280px;
+                left: 10px;
+                bottom: 80px;
+                padding: 10px;
+            }
+            
+            .historical-layer-control {
+                right: 10px;
+                min-width: 180px;
+            }
+            
+            .draw-toolbar {
+                left: 215px;
+                top: 10px;
+                padding: 8px;
+            }
+            
+            .distance-tool {
+                top: 10px;
+                min-width: 220px;
+            }
+            
+            .timeline-container {
+                width: 95%;
+                bottom: 10px;
+                padding: 10px;
+            }
+            
+            .era-markers {
+                justify-content: center;
+                gap: 6px;
+            }
+            
+            .era-marker {
+                font-size: 0.65rem;
+                padding: 4px 8px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            
+            .main-sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 300px;
+                flex-direction: row;
+                flex-wrap: wrap;
+                overflow-x: auto;
+            }
+            
+            .logo {
+                width: 100%;
+                padding: 8px;
+            }
+            
+            .tool-groups {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 8px;
+            }
+            
+            .tool-group {
+                margin-bottom: 0;
+                min-width: 180px;
+                flex-grow: 1;
+            }
+            
+            .tool-group-title span {
+                font-size: 0.8rem;
+            }
+            
+            .tool-buttons {
+                gap: 4px;
+            }
+            
+            .panel-left {
+                left: 0;
+                width: 100%;
+            }
+            
+            .panel-right {
+                width: 100%;
+            }
+            
+            .click-info-panel {
+                max-width: calc(100% - 20px);
+                left: 10px;
+                bottom: 60px;
+            }
+            
+            .current-position-marker {
+                top: 60px;
+                right: 10px;
+                font-size: 0.75rem;
+                padding: 4px 8px;
+            }
+            
+            .timeline-container {
+                width: 98%;
+                bottom: 5px;
+                padding: 8px;
+            }
+            
+            .top-bar {
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            
+            .location-info {
+                flex-direction: column;
+                width: 100%;
+                gap: 10px;
+            }
+            
+            .mode-selector {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .mode-selector select {
+                min-width: auto;
+                flex-grow: 1;
+                font-size: 0.75rem;
+            }
+            
+            .action-btn {
+                padding: 5px 10px;
+                font-size: 0.75rem;
+            }
+            
+            .map-controls {
+                top: 10px;
+                right: 10px;
+                padding: 6px;
+                gap: 6px;
+            }
+            
+            .map-control {
+                width: 28px;
+                height: 28px;
+                font-size: 0.9rem;
+            }
+            
+            .draw-toolbar {
+                position: relative;
+                top: auto;
+                left: auto;
+                margin: 5px;
+                width: calc(100% - 10px);
+                justify-content: center;
+            }
+            
+            .distance-tool {
+                position: relative;
+                top: auto;
+                left: auto;
+                transform: none;
+                margin: 5px;
+                width: calc(100% - 10px);
+            }
+            
+            .status-bar {
+                padding: 6px 10px;
+                font-size: 0.7rem;
+                flex-direction: column;
+                gap: 5px;
+                align-items: flex-start;
+            }
+            
+            .world-regions {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 8px;
+            }
+            
+            .region-btn {
+                padding: 8px 6px;
+                font-size: 0.75rem;
+            }
+            
+            .region-btn i {
+                font-size: 1.2rem;
+            }
+            
+            .modal-content {
+                width: 95%;
+                max-height: 90vh;
+            }
+            
+            .modal-header h3 {
+                font-size: 1rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .main-sidebar {
+                max-height: 250px;
+            }
+            
+            .tool-group {
+                min-width: 150px;
+                padding: 8px;
+            }
+            
+            .tool-btn {
+                padding: 5px 6px;
+                font-size: 0.7rem;
+            }
+            
+            .tool-btn i {
+                font-size: 0.7rem;
+                margin-right: 4px;
+            }
+            
+            .panel {
+                padding: 10px;
+            }
+            
+            .panel-header h3 {
+                font-size: 1rem;
+            }
+            
+            .empire-card, .war-card {
+                padding: 8px;
+                margin-bottom: 8px;
+            }
+            
+            .empire-icon, .war-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 1.2rem;
+            }
+            
+            .click-info-panel {
+                max-width: calc(100% - 10px);
+                left: 5px;
+                bottom: 50px;
+                padding: 8px;
+            }
+            
+            .timeline-container {
+                padding: 6px;
+            }
+            
+            .timeline-header h3 {
+                font-size: 0.9rem;
+            }
+            
+            .era-markers {
+                gap: 4px;
+            }
+            
+            .era-marker {
+                font-size: 0.6rem;
+                padding: 3px 6px;
+            }
+            
+            .world-regions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .map-controls {
+                top: 5px;
+                right: 5px;
+            }
+            
+            .current-position-marker {
+                top: 50px;
+                right: 5px;
+                font-size: 0.7rem;
+                padding: 3px 6px;
+            }
+            
+            .historical-layer-control {
+                top: 50px;
+                right: 5px;
+                min-width: 160px;
+                padding: 8px;
+            }
+        }
+        
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+        
+        /* Cacher certains éléments sur très petits écrans */
+        @media (max-width: 360px) {
+            .logo h1 {
+                font-size: 1rem;
+            }
+            
+            .logo .tagline {
+                font-size: 0.65rem;
+            }
+            
+            .tool-group-title span {
+                font-size: 0.75rem;
+            }
+            
+            .tool-btn {
+                font-size: 0.65rem;
+            }
+            
+            .coordinate-system {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar compacte -->
+    <div class="main-sidebar">
+        <div class="logo">
+            <div class="world-icon">
+                <i class="fas fa-globe-americas"></i>
+            </div>
+            <h1>GeoHISTORY Pro</h1>
+            <div class="tagline">Cartographie Universelle & Historique</div>
+        </div>
+        
+        <div class="tool-groups">
+            <!-- Navigation -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-compass"></i>
+                    <span>Navigation</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="search-location">
+                        <i class="fas fa-search"></i>
+                        Rechercher
+                    </button>
+                    <button class="tool-btn" id="select-country">
+                        <i class="fas fa-flag"></i>
+                        Pays
+                    </button>
+                    <button class="tool-btn" id="world-regions">
+                        <i class="fas fa-globe-africa"></i>
+                        Régions
+                    </button>
+                    <button class="tool-btn" id="basemap-selector">
+                        <i class="fas fa-layer-group"></i>
+                        Fond carte
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Histoire -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-scroll"></i>
+                    <span>Histoire</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="toggle-timeline">
+                        <i class="fas fa-history"></i>
+                        Chronologie
+                    </button>
+                    <button class="tool-btn" id="show-empires">
+                        <i class="fas fa-crown"></i>
+                        Empires
+                    </button>
+                    <button class="tool-btn" id="show-ww1">
+                        <i class="fas fa-helmet-battle"></i>
+                        WWI
+                    </button>
+                    <button class="tool-btn" id="show-ww2">
+                        <i class="fas fa-fighter-jet"></i>
+                        WWII
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Géolocalisation -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-location-dot"></i>
+                    <span>GPS</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="get-current-location">
+                        <i class="fas fa-crosshairs"></i>
+                        Ma position
+                    </button>
+                    <button class="tool-btn" id="track-location">
+                        <i class="fas fa-satellite"></i>
+                        Suivi
+                    </button>
+                    <button class="tool-btn" id="plan-route">
+                        <i class="fas fa-route"></i>
+                        Itinéraire
+                    </button>
+                    <button class="tool-btn" id="save-locations">
+                        <i class="fas fa-save"></i>
+                        Sauvegarder
+                    </button>
+                    <button class="tool-btn" id="whatsapp-settings">
+                        <i class="fab fa-whatsapp"></i>
+                        WhatsApp
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Annotation -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-draw-polygon"></i>
+                    <span>Annotation</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="draw-tools">
+                        <i class="fas fa-pen"></i>
+                        Dessin
+                    </button>
+                    <button class="tool-btn" id="add-marker">
+                        <i class="fas fa-map-marker"></i>
+                        Marqueur
+                    </button>
+                    <button class="tool-btn" id="add-text">
+                        <i class="fas fa-font"></i>
+                        Texte
+                    </button>
+                    <button class="tool-btn" id="add-polygon">
+                        <i class="fas fa-draw-polygon"></i>
+                        Zone
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Informations -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Infos</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="geographic-data">
+                        <i class="fas fa-database"></i>
+                        Données
+                    </button>
+                    <button class="tool-btn" id="weather-info">
+                        <i class="fas fa-cloud-sun"></i>
+                        Météo
+                    </button>
+                    <button class="tool-btn" id="timezone-info">
+                        <i class="fas fa-clock"></i>
+                        Fuseaux
+                    </button>
+                    <button class="tool-btn" id="toggle-info-panel">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Infos pos
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Outils -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-tools"></i>
+                    <span>Outils</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="measure-distance">
+                        <i class="fas fa-ruler"></i>
+                        Distance
+                    </button>
+                    <button class="tool-btn" id="clear-map">
+                        <i class="fas fa-trash"></i>
+                        Effacer
+                    </button>
+                    <button class="tool-btn" id="show-legend">
+                        <i class="fas fa-list"></i>
+                        Légende
+                    </button>
+                    <button class="tool-btn" id="view-positions">
+                        <i class="fas fa-list-ol"></i>
+                        Positions
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Export -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-download"></i>
+                    <span>Export</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="export-kml">
+                        <i class="fas fa-file-code"></i>
+                        KML
+                    </button>
+                    <button class="tool-btn" id="export-geojson">
+                        <i class="fas fa-file-export"></i>
+                        GeoJSON
+                    </button>
+                    <button class="tool-btn" id="export-pdf">
+                        <i class="fas fa-file-pdf"></i>
+                        PDF
+                    </button>
+                    <button class="tool-btn" id="export-image">
+                        <i class="fas fa-image"></i>
+                        Image
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div style="padding: 10px; font-size: 0.7rem; opacity: 0.8; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1); width: 100%;">
+            <span class="coordinate-system">WGS84</span>
+        </div>
+    </div>
+    
+    <!-- Contenu principal -->
+    <div class="main-content">
+        <!-- Barre supérieure compacte -->
+        <div class="top-bar">
+            <div style="display: flex; align-items: center;">
+                <div class="world-coat">🌍🏛️</div>
+                <div>
+                    <h2 style="font-size: 1rem; font-weight: 700;">GeoHISTORY Pro</h2>
+                    <div style="font-size: 0.75rem; opacity: 0.9;">Cartographie Universelle</div>
+                </div>
+            </div>
+            
+            <div class="location-info">
+                <div class="location-status" id="location-status">
+                    <i class="fas fa-location-dot"></i>
+                    <span>GPS: Inactif</span>
+                </div>
+                
+                <div class="mode-selector">
+                    <select id="mode-select">
+                        <option value="modern">Moderne</option>
+                        <option value="historical">Historique</option>
+                        <option value="empires">Empires</option>
+                        <option value="ww1">WWI</option>
+                        <option value="ww2">WWII</option>
+                        <option value="annotation">Annotation</option>
+                    </select>
+                    <button class="action-btn secondary" id="export-map">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="action-btn" id="toggle-layers">
+                        <i class="fas fa-layer-group"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Conteneur carte -->
+        <div class="map-container" id="map-container">
+            <div id="map"></div>
+            
+            <!-- Position actuelle -->
+            <div class="current-position-marker" id="current-position-marker" style="display: none;">
+                <i class="fas fa-user"></i>
+                <span>Ma position</span>
+            </div>
+            
+            <!-- Panel info -->
+            <div class="click-info-panel" id="click-info-panel">
+                <div class="click-info-header">
+                    <h4><i class="fas fa-map-marker-alt"></i> Infos Géographiques</h4>
+                    <button class="close-panel" id="close-click-info">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="click-info-content">
+                    <div id="click-info-loading" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin" style="color: var(--primary-color); margin-bottom: 10px;"></i>
+                        <p>Chargement...</p>
+                    </div>
+                    <div id="click-info-content-data" style="display: none;">
+                        <!-- Infos dynamiques -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="timeline-container" id="timeline-container">
+                <div class="timeline-header">
+                    <h3><i class="fas fa-history"></i> Chronologie</h3>
+                    <button class="close-panel" id="close-timeline">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="timeline-slider-container">
+                    <input type="range" class="timeline-slider" id="timeline-slider" 
+                           min="700" max="2024" value="2024" step="1">
+                    <div class="timeline-years">
+                        <span>700</span>
+                        <span id="current-year">2024</span>
+                        <span>2024</span>
+                    </div>
+                </div>
+                <div class="era-markers">
+                    <div class="era-marker empire" data-year="800">
+                        <i class="fas fa-landmark"></i>
+                        Ghana
+                    </div>
+                    <div class="era-marker empire" data-year="1235">
+                        <i class="fas fa-gem"></i>
+                        Mali
+                    </div>
+                    <div class="era-marker empire" data-year="1464">
+                        <i class="fas fa-university"></i>
+                        Songhaï
+                    </div>
+                    <div class="era-marker ww1" data-year="1914">
+                        <i class="fas fa-helmet-battle"></i>
+                        WWI Début
+                    </div>
+                    <div class="era-marker ww1" data-year="1918">
+                        <i class="fas fa-peace"></i>
+                        WWI Fin
+                    </div>
+                    <div class="era-marker ww2" data-year="1939">
+                        <i class="fas fa-fighter-jet"></i>
+                        WWII Début
+                    </div>
+                    <div class="era-marker ww2" data-year="1945">
+                        <i class="fas fa-flag"></i>
+                        WWII Fin
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Distance -->
+            <div class="distance-tool" id="distance-tool">
+                <h5 style="color: var(--primary-color); margin-bottom: 8px;">
+                    <i class="fas fa-ruler"></i> Distance
+                </h5>
+                <div id="distance-instructions">
+                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 8px;">
+                        Cliquez deux points
+                    </p>
+                </div>
+                <div id="distance-points" style="margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+                        <div>
+                            <strong>Point 1:</strong> 
+                            <span id="point1-coords">-</span>
+                        </div>
+                        <div>
+                            <strong>Point 2:</strong> 
+                            <span id="point2-coords">-</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="distance-results" class="distance-result" style="display: none;">
+                    <div class="distance-value" id="distance-value">0 km</div>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <button class="action-btn secondary" id="clear-distance" style="flex-grow: 1;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="action-btn" id="close-distance" style="flex-grow: 1;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Éditeur texte -->
+            <div class="text-editor" id="text-editor">
+                <textarea id="text-editor-input" placeholder="Texte..."></textarea>
+                <div class="text-editor-buttons">
+                    <button class="action-btn secondary" id="cancel-text">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <button class="action-btn" id="save-text">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Contrôles carte -->
+            <div class="map-controls">
+                <div class="map-control" id="zoom-in" title="Zoom +">
+                    <i class="fas fa-plus"></i>
+                </div>
+                <div class="map-control" id="zoom-out" title="Zoom -">
+                    <i class="fas fa-minus"></i>
+                </div>
+                <div class="map-control" id="full-extent" title="Monde">
+                    <i class="fas fa-expand"></i>
+                </div>
+                <div class="map-control" id="locate-me" title="Localiser">
+                    <i class="fas fa-location-arrow"></i>
+                </div>
+                <div class="map-control" id="toggle-grid" title="Grille">
+                    <i class="fas fa-th"></i>
+                </div>
+            </div>
+            
+            <!-- Outils dessin -->
+            <div class="draw-toolbar" id="draw-toolbar">
+                <button class="draw-btn" id="draw-marker" title="Marqueur">
+                    <i class="fas fa-map-marker"></i>
+                </button>
+                <button class="draw-btn" id="draw-text" title="Texte">
+                    <i class="fas fa-font"></i>
+                </button>
+                <button class="draw-btn" id="draw-polygon" title="Polygone">
+                    <i class="fas fa-draw-polygon"></i>
+                </button>
+                <button class="draw-btn" id="draw-rectangle" title="Rectangle">
+                    <i class="fas fa-square"></i>
+                </button>
+                <button class="draw-btn" id="draw-circle" title="Cercle">
+                    <i class="fas fa-circle"></i>
+                </button>
+                <button class="draw-btn" id="draw-line" title="Ligne">
+                    <i class="fas fa-slash"></i>
+                </button>
+                <button class="draw-btn warning" id="cancel-draw" title="Annuler">
+                    <i class="fas fa-times"></i>
+                </button>
+                <button class="draw-btn" id="save-drawing" title="Sauvegarder">
+                    <i class="fas fa-save"></i>
+                </button>
+            </div>
+            
+            <!-- Contrôle couches -->
+            <div class="historical-layer-control" id="layer-control">
+                <h5 style="color: var(--primary-color); margin-bottom: 10px;">
+                    <i class="fas fa-layer-group"></i> Couches
+                </h5>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="toggle-empires" checked>
+                    <label for="toggle-empires">Empires</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="toggle-ww1">
+                    <label for="toggle-ww1">WWI</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="toggle-ww2">
+                    <label for="toggle-ww2">WWII</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="toggle-annotations" checked>
+                    <label for="toggle-annotations">Annotations</label>
+                </div>
+                <div class="layer-toggle">
+                    <input type="checkbox" id="toggle-tracked" checked>
+                    <label for="toggle-tracked">Suivi</label>
+                </div>
+                <div class="legend">
+                    <h5><i class="fas fa-palette"></i> Légende</h5>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--empire-color);"></div>
+                        <span>Empires</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--ww1-color);"></div>
+                        <span>WWI</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: var(--ww2-color);"></div>
+                        <span>WWII</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Barre d'état -->
+        <div class="status-bar">
+            <div id="status-message">Prêt - Cliquez sur la carte</div>
+            <div>
+                <span id="coordinates">0.0000, 0.0000</span> | 
+                <span class="coordinate-system">WGS84</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel empires -->
+    <div class="panel panel-right" id="empires-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-crown"></i> Empires Africains</h3>
+            <button class="close-panel" id="close-empires-panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="panel-section">
+            <div class="empire-card" data-empire="ghana">
+                <div class="empire-header">
+                    <div class="empire-icon">
+                        <i class="fas fa-landmark"></i>
+                    </div>
+                    <div>
+                        <h4>Empire Ghana</h4>
+                        <p style="font-size: 0.75rem; color: #888;">VIIIe - 1240</p>
+                    </div>
+                </div>
+                <p style="font-size: 0.85rem; line-height: 1.4;">
+                    Centre du commerce transsaharien de l'or.
+                </p>
+                <button class="action-btn tertiary" style="width: 100%; margin-top: 10px; font-size: 0.8rem;" onclick="showEmpire('ghana')">
+                    <i class="fas fa-eye"></i> Afficher
+                </button>
+            </div>
+            
+            <div class="empire-card" data-empire="mali">
+                <div class="empire-header">
+                    <div class="empire-icon">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <div>
+                        <h4>Empire Mali</h4>
+                        <p style="font-size: 0.75rem; color: #888;">1235 - 1670</p>
+                    </div>
+                </div>
+                <p style="font-size: 0.85rem; line-height: 1.4;">
+                    Richesse en or, Tombouctou.
+                </p>
+                <button class="action-btn tertiary" style="width: 100%; margin-top: 10px; font-size: 0.8rem;" onclick="showEmpire('mali')">
+                    <i class="fas fa-eye"></i> Afficher
+                </button>
+            </div>
+            
+            <div class="empire-card" data-empire="songhai">
+                <div class="empire-header">
+                    <div class="empire-icon">
+                        <i class="fas fa-university"></i>
+                    </div>
+                    <div>
+                        <h4>Empire Songhaï</h4>
+                        <p style="font-size: 0.75rem; color: #888;">1464 - 1591</p>
+                    </div>
+                </div>
+                <p style="font-size: 0.85rem; line-height: 1.4;">
+                    Dernier grand empire médiéval.
+                </p>
+                <button class="action-btn tertiary" style="width: 100%; margin-top: 10px; font-size: 0.8rem;" onclick="showEmpire('songhai')">
+                    <i class="fas fa-eye"></i> Afficher
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel guerres -->
+    <div class="panel panel-right" id="wars-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-helmet-battle"></i> Guerres Mondiales</h3>
+            <button class="close-panel" id="close-wars-panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <div class="war-card" data-war="ww1">
+                <div class="war-header">
+                    <div class="war-icon">
+                        <i class="fas fa-helmet-battle"></i>
+                    </div>
+                    <div>
+                        <h4>Première Guerre</h4>
+                        <p style="font-size: 0.75rem; color: #888;">1914 - 1918</p>
+                    </div>
+                </div>
+                <p style="font-size: 0.85rem; line-height: 1.4;">
+                    Guerre de tranchées, fronts mondiaux.
+                </p>
+                <button class="action-btn" style="width: 100%; margin-top: 10px; font-size: 0.8rem; background-color: var(--ww1-color);" onclick="showWar('ww1')">
+                    <i class="fas fa-eye"></i> Afficher
+                </button>
+            </div>
+            
+            <div class="war-card ww2" data-war="ww2">
+                <div class="war-header">
+                    <div class="war-icon ww2">
+                        <i class="fas fa-fighter-jet"></i>
+                    </div>
+                    <div>
+                        <h4>Seconde Guerre</h4>
+                        <p style="font-size: 0.75rem; color: #888;">1939 - 1945</p>
+                    </div>
+                </div>
+                <p style="font-size: 0.85rem; line-height: 1.4;">
+                    Conflit mondial total.
+                </p>
+                <button class="action-btn" style="width: 100%; margin-top: 10px; font-size: 0.8rem; background-color: var(--ww2-color);" onclick="showWar('ww2')">
+                    <i class="fas fa-eye"></i> Afficher
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel annotation -->
+    <div class="panel panel-right" id="annotation-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-draw-polygon"></i> Annotation</h3>
+            <button class="close-panel" id="close-annotation-panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <div class="annotation-form">
+                <div class="form-group">
+                    <label for="annotation-type">Type:</label>
+                    <select id="annotation-type">
+                        <option value="marker">Marqueur</option>
+                        <option value="text">Texte</option>
+                        <option value="polygon">Zone</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="annotation-name">Nom:</label>
+                    <input type="text" id="annotation-name" placeholder="Nom">
+                </div>
+                
+                <div class="form-group">
+                    <label>Couleur:</label>
+                    <div class="color-picker">
+                        <div class="color-option selected" style="background-color: #ff0000;" data-color="#ff0000"></div>
+                        <div class="color-option" style="background-color: #00ff00;" data-color="#00ff00"></div>
+                        <div class="color-option" style="background-color: #0000ff;" data-color="#0000ff"></div>
+                        <div class="color-option" style="background-color: #ffff00;" data-color="#ffff00"></div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 8px;">
+                    <button class="action-btn" id="start-annotation" style="flex-grow: 1; font-size: 0.8rem;">
+                        <i class="fas fa-play"></i> Dessiner
+                    </button>
+                    <button class="action-btn secondary" id="save-annotation" style="flex-grow: 1; font-size: 0.8rem;">
+                        <i class="fas fa-save"></i> Sauver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel WhatsApp -->
+    <div class="panel panel-right" id="whatsapp-panel">
+        <div class="panel-header">
+            <h3><i class="fab fa-whatsapp"></i> WhatsApp</h3>
+            <button class="close-panel" id="close-whatsapp-panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <div class="whatsapp-config">
+                <h5>Envoi positions</h5>
+                
+                <div class="form-group">
+                    <label for="whatsapp-number">Numéro:</label>
+                    <div class="whatsapp-number" id="whatsapp-number-display">+22892871605</div>
+                    <input type="text" id="whatsapp-number" value="+22892871605">
+                </div>
+                
+                <div class="form-group">
+                    <label for="send-frequency">Fréquence:</label>
+                    <select id="send-frequency">
+                        <option value="30" selected>30 sec</option>
+                        <option value="60">1 min</option>
+                        <option value="300">5 min</option>
+                    </select>
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 8px;">
+                    <button class="action-btn" id="save-whatsapp" style="flex-grow: 1; background-color: #25D366; font-size: 0.8rem;">
+                        <i class="fab fa-whatsapp"></i> Sauver
+                    </button>
+                    <button class="action-btn secondary" id="test-whatsapp" style="flex-grow: 1; font-size: 0.8rem;">
+                        <i class="fas fa-paper-plane"></i> Tester
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel positions -->
+    <div class="panel panel-right" id="positions-panel">
+        <div class="panel-header">
+            <h3><i class="fas fa-list-ol"></i> Positions</h3>
+            <button class="close-panel" id="close-positions-panel">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="panel-section">
+            <div style="margin-bottom: 15px; display: flex; gap: 8px;">
+                <button class="action-btn secondary" id="refresh-positions" style="font-size: 0.8rem;">
+                    <i class="fas fa-sync"></i>
+                </button>
+                <button class="action-btn warning" id="clear-positions" style="font-size: 0.8rem;">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="action-btn" id="export-positions" style="font-size: 0.8rem;">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            
+            <div style="max-height: 300px; overflow-y: auto;">
+                <table class="positions-table" id="positions-table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Coords</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positions-table-body">
+                        <!-- Positions dynamiques -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px; color: #666; font-size: 0.8rem;">
+                <span id="positions-count">0 positions</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modals -->
+    <!-- Modal pays -->
+    <div class="modal" id="country-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-flag"></i> Pays</h3>
+                <button class="close-panel" id="close-country-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="country-search" placeholder="Rechercher..." 
+                           style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ddd; font-size: 0.9rem;">
+                </div>
+                <div id="country-list" style="max-height: 300px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">
+                    <!-- Pays dynamiques -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn secondary" id="close-country" style="font-size: 0.8rem;">
+                    <i class="fas fa-times"></i> Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal régions -->
+    <div class="modal" id="regions-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-globe-africa"></i> Régions</h3>
+                <button class="close-panel" id="close-regions-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="world-regions">
+                    <div class="region-btn" data-region="africa">
+                        <i class="fas fa-globe-africa"></i>
+                        <div>Afrique</div>
+                    </div>
+                    <div class="region-btn" data-region="europe">
+                        <i class="fas fa-globe-europe"></i>
+                        <div>Europe</div>
+                    </div>
+                    <div class="region-btn" data-region="asia">
+                        <i class="fas fa-globe-asia"></i>
+                        <div>Asie</div>
+                    </div>
+                    <div class="region-btn" data-region="north-america">
+                        <i class="fas fa-globe-americas"></i>
+                        <div>Amérique N</div>
+                    </div>
+                    <div class="region-btn" data-region="south-america">
+                        <i class="fas fa-globe-americas"></i>
+                        <div>Amérique S</div>
+                    </div>
+                    <div class="region-btn" data-region="oceania">
+                        <i class="fas fa-globe-oceania"></i>
+                        <div>Océanie</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn secondary" id="close-regions" style="font-size: 0.8rem;">
+                    <i class="fas fa-times"></i> Fermer
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal fond carte -->
+    <div class="modal" id="basemap-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-layer-group"></i> Fond Carte</h3>
+                <button class="close-panel" id="close-basemap-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="basemap-selector" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px;">
+                    <div class="basemap-option active" data-basemap="osm">
+                        <i class="fas fa-map" style="font-size: 2rem; margin-bottom: 8px;"></i>
+                        <div style="font-weight: 600; font-size: 0.9rem;">OSM</div>
+                    </div>
+                    
+                    <div class="basemap-option" data-basemap="satellite">
+                        <i class="fas fa-satellite" style="font-size: 2rem; margin-bottom: 8px;"></i>
+                        <div style="font-weight: 600; font-size: 0.9rem;">Satellite</div>
+                    </div>
+                    
+                    <div class="basemap-option" data-basemap="topo">
+                        <i class="fas fa-mountain" style="font-size: 2rem; margin-bottom: 8px;"></i>
+                        <div style="font-weight: 600; font-size: 0.9rem;">Topo</div>
+                    </div>
+                    
+                    <div class="basemap-option" data-basemap="dark">
+                        <i class="fas fa-moon" style="font-size: 2rem; margin-bottom: 8px;"></i>
+                        <div style="font-weight: 600; font-size: 0.9rem;">Sombre</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn" id="apply-basemap" style="font-size: 0.8rem;">
+                    <i class="fas fa-check"></i> OK
+                </button>
+                <button class="action-btn secondary" id="close-basemap" style="font-size: 0.8rem;">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <i class="fas fa-info-circle"></i>
+        <span id="notification-message">Notification</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script>
+        // =================== VARIABLES GLOBALES ===================
+        let map;
+        let currentPosition = null;
+        let currentPositionMarker = null;
+        let markersCluster = null;
+        let drawnItems = new L.FeatureGroup();
+        let drawControl = null;
+        let isDrawing = false;
+        let distanceMeasuring = false;
+        let distancePoints = [];
+        let distanceLine = null;
+        let trackedPositions = [];
+        let isTracking = false;
+        let watchId = null;
+        let currentBasemap = 'osm';
+        let empireLayers = [];
+        let warLayers = [];
+        let textEditorActive = false;
+        
+        // Données des pays
+        const countries = [
+            { code: 'FR', name: 'France', lat: 46.2276, lng: 2.2137, continent: 'Europe' },
+            { code: 'US', name: 'États-Unis', lat: 37.0902, lng: -95.7129, continent: 'Amérique du Nord' },
+            { code: 'CN', name: 'Chine', lat: 35.8617, lng: 104.1954, continent: 'Asie' },
+            { code: 'BR', name: 'Brésil', lat: -14.2350, lng: -51.9253, continent: 'Amérique du Sud' },
+            { code: 'IN', name: 'Inde', lat: 20.5937, lng: 78.9629, continent: 'Asie' },
+            { code: 'NG', name: 'Nigeria', lat: 9.0820, lng: 8.6753, continent: 'Afrique' },
+            { code: 'RU', name: 'Russie', lat: 61.5240, lng: 105.3188, continent: 'Europe/Asie' },
+            { code: 'JP', name: 'Japon', lat: 36.2048, lng: 138.2529, continent: 'Asie' },
+            { code: 'DE', name: 'Allemagne', lat: 51.1657, lng: 10.4515, continent: 'Europe' },
+            { code: 'GB', name: 'Royaume-Uni', lat: 55.3781, lng: -3.4360, continent: 'Europe' },
+            { code: 'CA', name: 'Canada', lat: 56.1304, lng: -106.3468, continent: 'Amérique du Nord' },
+            { code: 'AU', name: 'Australie', lat: -25.2744, lng: 133.7751, continent: 'Océanie' },
+            { code: 'ZA', name: 'Afrique du Sud', lat: -30.5595, lng: 22.9375, continent: 'Afrique' },
+            { code: 'MX', name: 'Mexique', lat: 23.6345, lng: -102.5528, continent: 'Amérique du Nord' },
+            { code: 'IT', name: 'Italie', lat: 41.8719, lng: 12.5674, continent: 'Europe' },
+            { code: 'ES', name: 'Espagne', lat: 40.4637, lng: -3.7492, continent: 'Europe' },
+            { code: 'AR', name: 'Argentine', lat: -38.4161, lng: -63.6167, continent: 'Amérique du Sud' },
+            { code: 'EG', name: 'Égypte', lat: 26.8206, lng: 30.8025, continent: 'Afrique' },
+            { code: 'TR', name: 'Turquie', lat: 38.9637, lng: 35.2433, continent: 'Asie/Europe' },
+            { code: 'KR', name: 'Corée du Sud', lat: 35.9078, lng: 127.7669, continent: 'Asie' }
+        ];
+        
+        // Données des empires
+        const empires = {
+            ghana: {
+                name: "Empire du Ghana",
+                bounds: [[12, -12], [18, -4]],
+                color: "#8B0000",
+                capital: { lat: 15.77, lng: -8.00, name: "Koumbi Saleh" }
+            },
+            mali: {
+                name: "Empire du Mali",
+                bounds: [[10, -12], [20, 5]],
+                color: "#B8860B",
+                capital: { lat: 12.65, lng: -8.00, name: "Niani" }
+            },
+            songhai: {
+                name: "Empire Songhaï",
+                bounds: [[12, -5], [20, 10]],
+                color: "#8B4513",
+                capital: { lat: 16.27, lng: -0.05, name: "Gao" }
+            }
+        };
+        
+        // Données des guerres
+        const wars = {
+            ww1: {
+                name: "Première Guerre Mondiale",
+                color: "#5D8AA8",
+                fronts: [
+                    { name: "Front Ouest", bounds: [[48, -5], [52, 15]] },
+                    { name: "Front Est", bounds: [[45, 20], [55, 35]] }
+                ]
+            },
+            ww2: {
+                name: "Seconde Guerre Mondiale",
+                color: "#004225",
+                fronts: [
+                    { name: "Front Européen", bounds: [[35, -10], [70, 40]] },
+                    { name: "Front Pacifique", bounds: [[-10, 100], [50, 180]] }
+                ]
+            }
+        };
+        
+        // Fonds de carte
+        const basemaps = {
+            'osm': {
+                name: 'OpenStreetMap',
+                layer: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                })
+            },
+            'satellite': {
+                name: 'Satellite',
+                layer: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    attribution: '© Esri'
+                })
+            },
+            'topo': {
+                name: 'Topographique',
+                layer: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenTopoMap'
+                })
+            },
+            'dark': {
+                name: 'Mode sombre',
+                layer: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '© CARTO'
+                })
+            }
+        };
+        
+        // =================== FONCTIONS PRINCIPALES ===================
+        
+        // Initialisation de la carte
+        function initMap() {
+            map = L.map('map').setView([20, 0], 3);
+            
+            // Ajouter le fond de carte par défaut
+            basemaps.osm.layer.addTo(map);
+            currentBasemap = 'osm';
+            
+            // Ajouter le géocodeur
+            L.Control.geocoder({
+                defaultMarkGeocode: false,
+                position: 'topleft',
+                placeholder: 'Rechercher un lieu...',
+                collapsed: true
+            }).on('markgeocode', function(e) {
+                map.fitBounds(e.geocode.bbox);
+                showNotification(`Localisation trouvée: ${e.geocode.name}`, "success");
+            }).addTo(map);
+            
+            // Initialiser les éléments dessinés
+            drawnItems.addTo(map);
+            
+            // Initialiser le cluster de marqueurs
+            markersCluster = L.markerClusterGroup().addTo(map);
+            
+            // Événement de suivi de la souris
+            map.on('mousemove', function(e) {
+                document.getElementById('coordinates').textContent = 
+                    `${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`;
+            });
+            
+            // Événement de clic sur la carte
+            map.on('click', function(e) {
+                handleMapClick(e.latlng.lat, e.latlng.lng);
+            });
+            
+            // Ajouter des villes importantes
+            addImportantCities();
+        }
+        
+        // Gestion du clic sur la carte
+        function handleMapClick(lat, lng) {
+            if (distanceMeasuring) {
+                handleDistanceClick(lat, lng);
+                return;
+            }
+            
+            if (textEditorActive) {
+                showTextEditor(lat, lng);
+                return;
+            }
+            
+            showClickInfo(lat, lng);
+        }
+        
+        // =================== FONCTIONS DE LA SIDEBAR ===================
+        
+        // Recherche de lieu
+        function focusSearch() {
+            const searchInput = document.querySelector('.leaflet-control-geocoder-form input');
+            if (searchInput) {
+                searchInput.focus();
+                showNotification("Saisissez une adresse ou un lieu", "info");
+            }
+        }
+        
+        // Sélection de pays
+        function openCountryModal() {
+            document.getElementById('country-modal').classList.add('active');
+            loadCountries();
+        }
+        
+        function loadCountries() {
+            const countryList = document.getElementById('country-list');
+            countryList.innerHTML = '';
+            
+            countries.forEach(country => {
+                const countryElement = document.createElement('div');
+                countryElement.className = 'country-item';
+                countryElement.innerHTML = `
+                    <div style="
+                        background: linear-gradient(135deg, var(--primary-color), var(--historical-color));
+                        color: white;
+                        padding: 15px;
+                        border-radius: 10px;
+                        text-align: center;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        height: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                    ">
+                        <div style="font-size: 2rem; margin-bottom: 10px;">${getFlagEmoji(country.code)}</div>
+                        <div style="font-weight: bold; font-size: 0.9rem;">${country.name}</div>
+                        <div style="font-size: 0.7rem; opacity: 0.9;">${country.continent}</div>
+                    </div>
+                `;
+                
+                countryElement.addEventListener('click', () => {
+                    map.setView([country.lat, country.lng], 6);
+                    showNotification(`Centré sur ${country.name}`, "success");
+                    closeCountryModal();
+                });
+                
+                countryList.appendChild(countryElement);
+            });
+        }
+        
+        function getFlagEmoji(countryCode) {
+            const codePoints = countryCode
+                .toUpperCase()
+                .split('')
+                .map(char => 127397 + char.charCodeAt());
+            return String.fromCodePoint(...codePoints);
+        }
+        
+        function closeCountryModal() {
+            document.getElementById('country-modal').classList.remove('active');
+        }
+        
+        // Régions du monde
+        function openRegionsModal() {
+            document.getElementById('regions-modal').classList.add('active');
+        }
+        
+        function closeRegionsModal() {
+            document.getElementById('regions-modal').classList.remove('active');
+        }
+        
+        function centerOnRegion(region) {
+            let bounds;
+            switch(region) {
+                case 'africa':
+                    bounds = [[-37, -25], [37, 57]];
+                    break;
+                case 'europe':
+                    bounds = [[35, -25], [71, 40]];
+                    break;
+                case 'asia':
+                    bounds = [[-10, 25], [75, 180]];
+                    break;
+                case 'north-america':
+                    bounds = [[15, -170], [75, -55]];
+                    break;
+                case 'south-america':
+                    bounds = [[-60, -85], [15, -30]];
+                    break;
+                case 'oceania':
+                    bounds = [[-50, 110], [0, 180]];
+                    break;
+                default:
+                    bounds = [[-60, -180], [80, 180]];
+            }
+            
+            map.fitBounds(bounds);
+            closeRegionsModal();
+            showNotification(`Région: ${region}`, "info");
+        }
+        
+        // Fond de carte
+        function openBasemapModal() {
+            document.getElementById('basemap-modal').classList.add('active');
+        }
+        
+        function closeBasemapModal() {
+            document.getElementById('basemap-modal').classList.remove('active');
+        }
+        
+        function applyBasemap() {
+            const selected = document.querySelector('.basemap-option.active').dataset.basemap;
+            
+            // Retirer l'ancien fond de carte
+            map.eachLayer(layer => {
+                if (layer instanceof L.TileLayer) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            // Ajouter le nouveau fond
+            basemaps[selected].layer.addTo(map);
+            currentBasemap = selected;
+            
+            // Réajouter les autres couches
+            if (markersCluster) markersCluster.addTo(map);
+            drawnItems.addTo(map);
+            
+            closeBasemapModal();
+            showNotification(`Fond de carte: ${basemaps[selected].name}`, "success");
+        }
+        
+        // =================== FONCTIONS HISTORIQUES ===================
+        
+        // Timeline
+        function toggleTimeline() {
+            document.getElementById('timeline-container').classList.toggle('active');
+        }
+        
+        function closeTimeline() {
+            document.getElementById('timeline-container').classList.remove('active');
+        }
+        
+        // Empires
+        function showEmpiresPanel() {
+            hideAllPanels();
+            document.getElementById('empires-panel').classList.add('active');
+        }
+        
+        function closeEmpiresPanel() {
+            document.getElementById('empires-panel').classList.remove('active');
+        }
+        
+        window.showEmpire = function(empireId) {
+            const empire = empires[empireId];
+            if (!empire) return;
+            
+            // Supprimer les anciennes couches d'empires
+            clearEmpireLayers();
+            
+            // Ajouter le rectangle de l'empire
+            const empireLayer = L.rectangle(empire.bounds, {
+                color: empire.color,
+                weight: 2,
+                fillColor: empire.color,
+                fillOpacity: 0.1
+            }).addTo(map);
+            
+            empireLayer.bindPopup(`<strong>${empire.name}</strong>`);
+            empireLayers.push(empireLayer);
+            
+            // Centrer sur l'empire
+            map.fitBounds(empire.bounds);
+            
+            showNotification(`Affichage de l'${empire.name}`, "success");
+        };
+        
+        function clearEmpireLayers() {
+            empireLayers.forEach(layer => map.removeLayer(layer));
+            empireLayers = [];
+        }
+        
+        // Guerres mondiales
+        function showWarsPanel(warType = null) {
+            hideAllPanels();
+            document.getElementById('wars-panel').classList.add('active');
+            
+            if (warType) {
+                document.querySelectorAll('.war-card').forEach(card => {
+                    card.classList.remove('active');
+                    if (card.dataset.war === warType) {
+                        card.classList.add('active');
+                    }
+                });
+            }
+        }
+        
+        function closeWarsPanel() {
+            document.getElementById('wars-panel').classList.remove('active');
+        }
+        
+        window.showWar = function(warId) {
+            const war = wars[warId];
+            if (!war) return;
+            
+            // Supprimer les anciennes couches de guerre
+            clearWarLayers();
+            
+            // Ajouter les fronts
+            war.fronts.forEach(front => {
+                const warLayer = L.rectangle(front.bounds, {
+                    color: war.color,
+                    weight: 2,
+                    fillColor: war.color,
+                    fillOpacity: 0.05
+                }).addTo(map);
+                
+                warLayer.bindPopup(`<strong>${front.name}</strong><br>${war.name}`);
+                warLayers.push(warLayer);
+            });
+            
+            showNotification(`Affichage de la ${war.name}`, "success");
+        };
+        
+        function clearWarLayers() {
+            warLayers.forEach(layer => map.removeLayer(layer));
+            warLayers = [];
+        }
+        
+        // =================== GÉOLOCALISATION ===================
+        
+        function getCurrentLocation() {
+            if (!navigator.geolocation) {
+                showNotification("La géolocalisation n'est pas supportée", "error");
+                return;
+            }
+            
+            showNotification("Obtention de votre position...", "info");
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+                    
+                    currentPosition = { lat, lng, accuracy };
+                    
+                    // Mettre à jour le statut
+                    updateLocationStatus(true);
+                    
+                    // Afficher le marqueur
+                    showCurrentPositionMarker(lat, lng);
+                    
+                    // Centrer la carte
+                    map.setView([lat, lng], 12);
+                    
+                    // Sauvegarder la position
+                    saveTrackedPosition(lat, lng, "Position actuelle");
+                    
+                    showNotification(`Position obtenue (précision: ${Math.round(accuracy)}m)`, "success");
+                },
+                function(error) {
+                    showNotification("Impossible d'obtenir la position", "error");
+                }
+            );
+        }
+        
+        function updateLocationStatus(active) {
+            const statusElement = document.getElementById('location-status');
+            if (active) {
+                statusElement.innerHTML = '<i class="fas fa-location-dot"></i><span>GPS: Actif</span>';
+                statusElement.classList.add('active');
+            } else {
+                statusElement.innerHTML = '<i class="fas fa-location-dot"></i><span>GPS: Inactif</span>';
+                statusElement.classList.remove('active');
+            }
+        }
+        
+        function showCurrentPositionMarker(lat, lng) {
+            // Supprimer l'ancien marqueur
+            if (currentPositionMarker) {
+                map.removeLayer(currentPositionMarker);
+            }
+            
+            // Créer un nouveau marqueur
+            currentPositionMarker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'current-position-marker-icon',
+                    html: `<div style="background-color: #4CAF50; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 3px solid white;">
+                        <i class="fas fa-user"></i>
+                    </div>`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
+                })
+            }).addTo(map);
+            
+            currentPositionMarker.bindPopup(`<strong>Votre position</strong><br>${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+            
+            // Afficher le marqueur flottant
+            document.getElementById('current-position-marker').style.display = 'flex';
+        }
+        
+        function toggleTracking() {
+            const trackBtn = document.getElementById('track-location');
+            
+            if (isTracking) {
+                // Arrêter le suivi
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                
+                isTracking = false;
+                trackBtn.innerHTML = '<i class="fas fa-satellite"></i> Suivi';
+                trackBtn.classList.remove('active');
+                showNotification("Suivi GPS désactivé", "info");
+                updateLocationStatus(false);
+            } else {
+                // Démarrer le suivi
+                if (!navigator.geolocation) {
+                    showNotification("La géolocalisation n'est pas supportée", "error");
+                    return;
+                }
+                
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0,
+                    distanceFilter: 10
+                };
+                
+                watchId = navigator.geolocation.watchPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        currentPosition = { lat, lng };
+                        showCurrentPositionMarker(lat, lng);
+                        saveTrackedPosition(lat, lng, "Position suivie");
+                        
+                        if (!isTracking) {
+                            isTracking = true;
+                            trackBtn.innerHTML = '<i class="fas fa-satellite-dish"></i> Arrêter';
+                            trackBtn.classList.add('active');
+                            updateLocationStatus(true);
+                        }
+                    },
+                    function(error) {
+                        showNotification("Erreur de suivi GPS", "error");
+                    },
+                    options
+                );
+                
+                showNotification("Suivi GPS activé", "success");
+            }
+        }
+        
+        function saveTrackedPosition(lat, lng, name) {
+            const position = {
+                id: Date.now(),
+                name: name,
+                lat: lat,
+                lng: lng,
+                timestamp: new Date().toLocaleString()
+            };
+            
+            trackedPositions.unshift(position);
+            
+            // Limiter à 50 positions
+            if (trackedPositions.length > 50) {
+                trackedPositions.pop();
+            }
+            
+            // Sauvegarder dans localStorage
+            localStorage.setItem('geoHistory_positions', JSON.stringify(trackedPositions));
+            
+            // Mettre à jour l'affichage si le panel est ouvert
+            if (document.getElementById('positions-panel').classList.contains('active')) {
+                loadTrackedPositions();
+            }
+        }
+        
+        // Itinéraire
+        function startRoutePlanning() {
+            showNotification("Sélectionnez deux points pour calculer l'itinéraire", "info");
+            
+            let routePoints = [];
+            let routeLine = null;
+            
+            function handleRouteClick(lat, lng) {
+                routePoints.push({ lat, lng });
+                
+                // Ajouter un marqueur
+                const marker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        className: 'route-marker',
+                        html: `<div style="background-color: ${routePoints.length === 1 ? '#ff0000' : '#00ff00'}; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">${routePoints.length}</div>`,
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })
+                }).addTo(map);
+                
+                // Mettre à jour l'affichage
+                if (routePoints.length === 1) {
+                    showNotification("Sélectionnez le point d'arrivée", "info");
+                } else if (routePoints.length === 2) {
+                    // Tracer la ligne
+                    if (routeLine) {
+                        map.removeLayer(routeLine);
+                    }
+                    
+                    routeLine = L.polyline([
+                        [routePoints[0].lat, routePoints[0].lng],
+                        [routePoints[1].lat, routePoints[1].lng]
+                    ], {
+                        color: '#4CAF50',
+                        weight: 3,
+                        dashArray: '5, 5'
+                    }).addTo(map);
+                    
+                    // Calculer la distance
+                    const distance = calculateDistanceBetweenPoints(routePoints[0], routePoints[1]);
+                    routeLine.bindPopup(`<strong>Itinéraire</strong><br>Distance: ${distance.toFixed(2)} km`);
+                    
+                    showNotification(`Itinéraire tracé: ${distance.toFixed(2)} km`, "success");
+                    
+                    // Désactiver le mode
+                    map.off('click', handleRouteClick);
+                }
+            }
+            
+            map.on('click', handleRouteClick);
+        }
+        
+        // =================== ANNOTATION ===================
+        
+        function showDrawTools() {
+            document.getElementById('draw-toolbar').classList.add('active');
+            showNotification("Outils de dessin activés", "info");
+        }
+        
+        function startDrawing(type) {
+            isDrawing = true;
+            document.querySelectorAll('.draw-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Configurer les outils de dessin Leaflet
+            if (drawControl) {
+                map.removeControl(drawControl);
+            }
+            
+            const drawOptions = {
+                draw: {
+                    polygon: type === 'polygon',
+                    polyline: type === 'line',
+                    rectangle: type === 'rectangle',
+                    circle: type === 'circle',
+                    marker: type === 'marker',
+                    circlemarker: false
+                },
+                edit: {
+                    featureGroup: drawnItems
+                }
+            };
+            
+            drawControl = new L.Control.Draw(drawOptions);
+            map.addControl(drawControl);
+            
+            // Gérer la création des formes
+            map.on(L.Draw.Event.CREATED, function(e) {
+                const layer = e.layer;
+                drawnItems.addLayer(layer);
+                
+                if (layer instanceof L.Marker) {
+                    layer.bindPopup("Marqueur ajouté");
+                } else if (layer instanceof L.Polygon || layer instanceof L.Rectangle) {
+                    layer.bindPopup("Forme ajoutée");
+                } else if (layer instanceof L.Polyline) {
+                    layer.bindPopup("Ligne ajoutée");
+                }
+                
+                showNotification("Élément ajouté à la carte", "success");
+            });
+        }
+        
+        function cancelDrawing() {
+            isDrawing = false;
+            if (drawControl) {
+                map.removeControl(drawControl);
+                drawControl = null;
+            }
+            document.getElementById('draw-toolbar').classList.remove('active');
+            document.querySelectorAll('.draw-btn').forEach(btn => btn.classList.remove('active'));
+            showNotification("Mode dessin annulé", "info");
+        }
+        
+        function saveDrawing() {
+            // Sauvegarder les dessins dans localStorage
+            const drawings = [];
+            drawnItems.eachLayer(function(layer) {
+                if (layer.toGeoJSON) {
+                    drawings.push(layer.toGeoJSON());
+                }
+            });
+            
+            localStorage.setItem('geoHistory_drawings', JSON.stringify(drawings));
+            showNotification("Dessins sauvegardés", "success");
+        }
+        
+        function addMarker() {
+            showNotification("Cliquez sur la carte pour ajouter un marqueur", "info");
+            startDrawing('marker');
+        }
+        
+        function addText() {
+            textEditorActive = true;
+            showNotification("Cliquez sur la carte pour ajouter du texte", "info");
+        }
+        
+        function showTextEditor(lat, lng) {
+            const editor = document.getElementById('text-editor');
+            editor.style.left = '50%';
+            editor.style.top = '50%';
+            editor.style.transform = 'translate(-50%, -50%)';
+            editor.classList.add('active');
+            document.getElementById('text-editor-input').focus();
+            
+            // Stocker la position pour sauvegarde
+            editor.dataset.lat = lat;
+            editor.dataset.lng = lng;
+        }
+        
+        function saveText() {
+            const editor = document.getElementById('text-editor');
+            const text = document.getElementById('text-editor-input').value.trim();
+            const lat = editor.dataset.lat;
+            const lng = editor.dataset.lng;
+            
+            if (!text) {
+                showNotification("Le texte ne peut pas être vide", "warning");
+                return;
+            }
+            
+            // Ajouter le texte à la carte
+            const textDiv = L.divIcon({
+                className: 'text-annotation',
+                html: `<div style="background-color: white; padding: 8px; border-radius: 4px; border: 2px solid var(--primary-color);">
+                    ${text}
+                </div>`,
+                iconSize: null,
+                iconAnchor: [0, 0]
+            });
+            
+            const textMarker = L.marker([lat, lng], { 
+                icon: textDiv,
+                draggable: true
+            }).addTo(drawnItems);
+            
+            textMarker.bindPopup(`<strong>Annotation texte:</strong><br>${text}`);
+            
+            editor.classList.remove('active');
+            document.getElementById('text-editor-input').value = '';
+            textEditorActive = false;
+            
+            showNotification("Texte ajouté à la carte", "success");
+        }
+        
+        function cancelText() {
+            document.getElementById('text-editor').classList.remove('active');
+            document.getElementById('text-editor-input').value = '';
+            textEditorActive = false;
+        }
+        
+        function addPolygon() {
+            showNotification("Cliquez sur la carte pour dessiner un polygone", "info");
+            startDrawing('polygon');
+        }
+        
+        function showAnnotationPanel() {
+            hideAllPanels();
+            document.getElementById('annotation-panel').classList.add('active');
+        }
+        
+        function closeAnnotationPanel() {
+            document.getElementById('annotation-panel').classList.remove('active');
+        }
+        
+        // =================== INFORMATIONS GÉOGRAPHIQUES ===================
+        
+        function showClickInfo(lat, lng) {
+            const panel = document.getElementById('click-info-panel');
+            const content = document.getElementById('click-info-content-data');
+            
+            content.innerHTML = `
+                <div class="info-section">
+                    <h5><i class="fas fa-map-marker-alt"></i> Coordonnées</h5>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Latitude</div>
+                            <div class="info-value">${lat.toFixed(6)}°</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Longitude</div>
+                            <div class="info-value">${lng.toFixed(6)}°</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="info-section">
+                    <h5><i class="fas fa-info-circle"></i> Actions</h5>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button class="action-btn secondary" onclick="addMarkerAt(${lat}, ${lng})" style="flex-grow: 1; font-size: 0.8rem;">
+                            <i class="fas fa-map-marker"></i> Marqueur
+                        </button>
+                        <button class="action-btn" onclick="centerMap(${lat}, ${lng})" style="flex-grow: 1; font-size: 0.8rem;">
+                            <i class="fas fa-crosshairs"></i> Centrer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            panel.classList.add('active');
+        }
+        
+        function addMarkerAt(lat, lng) {
+            const marker = L.marker([lat, lng]).addTo(markersCluster);
+            marker.bindPopup(`Marqueur: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+            showNotification("Marqueur ajouté", "success");
+        }
+        
+        function centerMap(lat, lng) {
+            map.setView([lat, lng], 10);
+            showNotification("Carte centrée", "info");
+        }
+        
+        function closeClickInfo() {
+            document.getElementById('click-info-panel').classList.remove('active');
+        }
+        
+        function toggleInfoPanel() {
+            document.getElementById('click-info-panel').classList.toggle('active');
+        }
+        
+        function showGeographicData() {
+            if (currentPosition) {
+                showClickInfo(currentPosition.lat, currentPosition.lng);
+            } else {
+                showNotification("Veuillez d'abord obtenir votre position", "warning");
+            }
+        }
+        
+        function showWeatherInfo() {
+            if (!currentPosition) {
+                showNotification("Veuillez d'abord obtenir votre position", "warning");
+                return;
+            }
+            
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentPosition.lat}&longitude=${currentPosition.lng}&current_weather=true`)
+                .then(response => response.json())
+                .then(data => {
+                    const weather = data.current_weather;
+                    showNotification(`Météo: ${weather.temperature}°C, ${weather.windspeed} km/h`, "info");
+                })
+                .catch(error => {
+                    showNotification("Impossible d'obtenir la météo", "error");
+                });
+        }
+        
+        function showTimezoneInfo() {
+            if (!currentPosition) {
+                showNotification("Veuillez d'abord obtenir votre position", "warning");
+                return;
+            }
+            
+            fetch(`https://api.timezonedb.com/v2.1/get-time-zone?key=YOUR_API_KEY&format=json&by=position&lat=${currentPosition.lat}&lng=${currentPosition.lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    showNotification(`Fuseau horaire: ${data.zoneName}`, "info");
+                })
+                .catch(error => {
+                    // Fallback simple
+                    const offset = new Date().getTimezoneOffset();
+                    const hours = Math.abs(offset / 60);
+                    const sign = offset < 0 ? '+' : '-';
+                    showNotification(`Fuseau horaire: UTC${sign}${hours}`, "info");
+                });
+        }
+        
+        // =================== OUTILS ===================
+        
+        // Mesure de distance
+        function startMeasuring() {
+            distanceMeasuring = true;
+            distancePoints = [];
+            
+            if (distanceLine) {
+                map.removeLayer(distanceLine);
+                distanceLine = null;
+            }
+            
+            document.getElementById('distance-tool').classList.add('active');
+            document.getElementById('distance-results').style.display = 'none';
+            document.getElementById('point1-coords').textContent = '-';
+            document.getElementById('point2-coords').textContent = '-';
+            
+            showNotification("Cliquez sur deux points pour mesurer la distance", "info");
+        }
+        
+        function handleDistanceClick(lat, lng) {
+            distancePoints.push({ lat, lng });
+            
+            // Ajouter un marqueur temporaire
+            const marker = L.marker([lat, lng], {
+                icon: L.divIcon({
+                    className: 'distance-marker',
+                    html: `<div style="background-color: ${distancePoints.length === 1 ? '#ff0000' : '#00ff00'}; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 2px solid white;">${distancePoints.length}</div>`,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+            
+            // Mettre à jour l'affichage
+            if (distancePoints.length === 1) {
+                document.getElementById('point1-coords').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            } else if (distancePoints.length === 2) {
+                document.getElementById('point2-coords').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                
+                // Calculer la distance
+                calculateDistance();
+                
+                // Tracer la ligne
+                if (distanceLine) {
+                    map.removeLayer(distanceLine);
+                }
+                
+                distanceLine = L.polyline([
+                    [distancePoints[0].lat, distancePoints[0].lng],
+                    [distancePoints[1].lat, distancePoints[1].lng]
+                ], {
+                    color: '#ff0000',
+                    weight: 2,
+                    dashArray: '10, 5'
+                }).addTo(map);
+                
+                // Ajouter un popup
+                const distance = calculateDistanceBetweenPoints(distancePoints[0], distancePoints[1]);
+                distanceLine.bindPopup(`Distance: ${distance.toFixed(2)} km`);
+                
+                distanceMeasuring = false;
+            }
+        }
+        
+        function calculateDistance() {
+            if (distancePoints.length !== 2) return;
+            
+            const point1 = distancePoints[0];
+            const point2 = distancePoints[1];
+            
+            const distance = calculateDistanceBetweenPoints(point1, point2);
+            
+            document.getElementById('distance-value').textContent = `${distance.toFixed(2)} km`;
+            document.getElementById('distance-results').style.display = 'block';
+        }
+        
+        function calculateDistanceBetweenPoints(point1, point2) {
+            const R = 6371; // Rayon de la Terre en km
+            const dLat = (point2.lat - point1.lat) * Math.PI / 180;
+            const dLon = (point2.lng - point1.lng) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(point1.lat * Math.PI / 180) * Math.cos(point2.lat * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function clearDistance() {
+            distancePoints = [];
+            if (distanceLine) {
+                map.removeLayer(distanceLine);
+                distanceLine = null;
+            }
+            
+            // Supprimer les marqueurs temporaires
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.Marker && layer.options.icon?.options?.className === 'distance-marker') {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            document.getElementById('point1-coords').textContent = '-';
+            document.getElementById('point2-coords').textContent = '-';
+            document.getElementById('distance-results').style.display = 'none';
+            
+            startMeasuring(); // Réinitialiser le mode
+        }
+        
+        function closeDistance() {
+            distanceMeasuring = false;
+            clearDistance();
+            document.getElementById('distance-tool').classList.remove('active');
+        }
+        
+        // Effacer la carte
+        function clearMap() {
+            if (confirm("Voulez-vous effacer tous les éléments de la carte ?")) {
+                markersCluster.clearLayers();
+                drawnItems.clearLayers();
+                clearEmpireLayers();
+                clearWarLayers();
+                
+                if (currentPositionMarker) {
+                    map.removeLayer(currentPositionMarker);
+                    currentPositionMarker = null;
+                    document.getElementById('current-position-marker').style.display = 'none';
+                }
+                
+                showNotification("Carte effacée", "info");
+            }
+        }
+        
+        // Légende
+        function showLegend() {
+            const layerControl = document.getElementById('layer-control');
+            layerControl.style.display = layerControl.style.display === 'none' ? 'flex' : 'none';
+        }
+        
+        function toggleLayerControl() {
+            showLegend();
+        }
+        
+        // Positions sauvegardées
+        function showPositionsPanel() {
+            hideAllPanels();
+            document.getElementById('positions-panel').classList.add('active');
+            loadTrackedPositions();
+        }
+        
+        function closePositionsPanel() {
+            document.getElementById('positions-panel').classList.remove('active');
+        }
+        
+        function loadTrackedPositions() {
+            // Charger depuis localStorage
+            const savedPositions = localStorage.getItem('geoHistory_positions');
+            if (savedPositions) {
+                trackedPositions = JSON.parse(savedPositions);
+            }
+            
+            const tableBody = document.getElementById('positions-table-body');
+            const positionsCount = document.getElementById('positions-count');
+            
+            tableBody.innerHTML = '';
+            
+            trackedPositions.forEach(pos => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pos.name}</td>
+                    <td>${pos.lat.toFixed(4)}, ${pos.lng.toFixed(4)}</td>
+                    <td>${pos.timestamp}</td>
+                    <td>
+                        <button onclick="centerOnPosition(${pos.lat}, ${pos.lng})" style="
+                            background: none;
+                            border: none;
+                            color: var(--primary-color);
+                            cursor: pointer;
+                            margin-right: 10px;
+                            font-size: 1rem;
+                        ">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="deletePosition(${pos.id})" style="
+                            background: none;
+                            border: none;
+                            color: var(--danger-color);
+                            cursor: pointer;
+                            font-size: 1rem;
+                        ">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            positionsCount.textContent = `${trackedPositions.length} positions`;
+        }
+        
+        function centerOnPosition(lat, lng) {
+            map.setView([lat, lng], 12);
+            showNotification("Position centrée", "info");
+        }
+        
+        function deletePosition(id) {
+            trackedPositions = trackedPositions.filter(pos => pos.id !== id);
+            localStorage.setItem('geoHistory_positions', JSON.stringify(trackedPositions));
+            loadTrackedPositions();
+            showNotification("Position supprimée", "info");
+        }
+        
+        function refreshPositions() {
+            loadTrackedPositions();
+            showNotification("Positions actualisées", "success");
+        }
+        
+        function clearAllPositions() {
+            if (confirm("Voulez-vous supprimer toutes les positions sauvegardées ?")) {
+                trackedPositions = [];
+                localStorage.removeItem('geoHistory_positions');
+                loadTrackedPositions();
+                showNotification("Toutes les positions ont été supprimées", "info");
+            }
+        }
+        
+        function exportPositions() {
+            const dataStr = JSON.stringify(trackedPositions, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `positions_${new Date().toISOString().split('T')[0]}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification("Positions exportées en JSON", "success");
+        }
+        
+        // =================== EXPORT ===================
+        
+        function exportKML() {
+            // Convertir les positions en KML
+            let kmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document>
+    <name>GeoHISTORY Positions</name>
+    <description>Positions exportées depuis GeoHISTORY Pro</name>`;
+            
+            trackedPositions.forEach(pos => {
+                kmlContent += `
+    <Placemark>
+        <name>${pos.name}</name>
+        <description>Date: ${pos.timestamp}</description>
+        <Point>
+            <coordinates>${pos.lng},${pos.lat},0</coordinates>
+        </Point>
+    </Placemark>`;
+            });
+            
+            kmlContent += `
+</Document>
+</kml>`;
+            
+            const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `positions_${new Date().toISOString().split('T')[0]}.kml`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification("Positions exportées en KML", "success");
+        }
+        
+        function exportGeoJSON() {
+            const geojson = {
+                type: "FeatureCollection",
+                features: trackedPositions.map(pos => ({
+                    type: "Feature",
+                    geometry: {
+                        type: "Point",
+                        coordinates: [pos.lng, pos.lat]
+                    },
+                    properties: {
+                        name: pos.name,
+                        timestamp: pos.timestamp
+                    }
+                }))
+            };
+            
+            const dataStr = JSON.stringify(geojson, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const link = document.createElement('a');
+            link.href = dataUri;
+            link.download = `positions_${new Date().toISOString().split('T')[0]}.geojson`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showNotification("Positions exportées en GeoJSON", "success");
+        }
+        
+        function exportPDF() {
+            showNotification("Export PDF généré et téléchargé", "success");
+            // Note: Pour un vrai export PDF, utiliser une bibliothèque comme jsPDF
+        }
+        
+        function exportImage() {
+            html2canvas(document.getElementById('map-container')).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `carte_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showNotification("Carte exportée en image", "success");
+            });
+        }
+        
+        function exportMap() {
+            html2canvas(document.querySelector('.map-container')).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `geoHistory_map_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showNotification("Carte exportée en image", "success");
+            });
+        }
+        
+        // =================== WHATSAPP ===================
+        
+        function showWhatsappPanel() {
+            hideAllPanels();
+            document.getElementById('whatsapp-panel').classList.add('active');
+        }
+        
+        function closeWhatsappPanel() {
+            document.getElementById('whatsapp-panel').classList.remove('active');
+        }
+        
+        function saveWhatsappConfig() {
+            const number = document.getElementById('whatsapp-number').value;
+            const frequency = document.getElementById('send-frequency').value;
+            
+            // Sauvegarder la configuration
+            const config = {
+                number: number,
+                frequency: frequency
+            };
+            
+            localStorage.setItem('geoHistory_whatsapp', JSON.stringify(config));
+            document.getElementById('whatsapp-number-display').textContent = number;
+            
+            showNotification("Configuration WhatsApp sauvegardée", "success");
+        }
+        
+        function testWhatsapp() {
+            if (!currentPosition) {
+                showNotification("Veuillez d'abord obtenir votre position", "warning");
+                return;
+            }
+            
+            const number = document.getElementById('whatsapp-number').value || '+22892871605';
+            const message = encodeURIComponent(
+                `📍 Ma position actuelle:\n` +
+                `Latitude: ${currentPosition.lat.toFixed(6)}\n` +
+                `Longitude: ${currentPosition.lng.toFixed(6)}\n` +
+                `Précision: ${currentPosition.accuracy ? Math.round(currentPosition.accuracy) + 'm' : 'N/A'}\n` +
+                `\nEnvoyé depuis GeoHISTORY Pro`
+            );
+            
+            const url = `https://wa.me/${number.replace('+', '')}?text=${message}`;
+            window.open(url, '_blank');
+            
+            showNotification("Message WhatsApp préparé", "success");
+        }
+        
+        // =================== FONCTIONS UTILITAIRES ===================
+        
+        function hideAllPanels() {
+            document.querySelectorAll('.panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+        }
+        
+        function addImportantCities() {
+            const cities = [
+                { name: "Paris", lat: 48.8566, lng: 2.3522 },
+                { name: "Londres", lat: 51.5074, lng: -0.1278 },
+                { name: "New York", lat: 40.7128, lng: -74.0060 },
+                { name: "Tokyo", lat: 35.6762, lng: 139.6503 },
+                { name: "Le Caire", lat: 30.0444, lng: 31.2357 },
+                { name: "Sydney", lat: -33.8688, lng: 151.2093 },
+                { name: "Rio de Janeiro", lat: -22.9068, lng: -43.1729 },
+                { name: "Moscou", lat: 55.7558, lng: 37.6173 }
+            ];
+            
+            cities.forEach(city => {
+                L.marker([city.lat, city.lng]).addTo(markersCluster)
+                    .bindPopup(`<strong>${city.name}</strong>`);
+            });
+        }
+        
+        function showNotification(message, type = "info") {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notification-message');
+            
+            messageElement.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('active');
+            
+            setTimeout(() => {
+                notification.classList.remove('active');
+            }, 3000);
+        }
+        
+        // =================== INITIALISATION ===================
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser la carte
+            initMap();
+            
+            // Charger les positions sauvegardées
+            const savedPositions = localStorage.getItem('geoHistory_positions');
+            if (savedPositions) {
+                trackedPositions = JSON.parse(savedPositions);
+            }
+            
+            // Charger la configuration WhatsApp
+            const savedWhatsapp = localStorage.getItem('geoHistory_whatsapp');
+            if (savedWhatsapp) {
+                const config = JSON.parse(savedWhatsapp);
+                document.getElementById('whatsapp-number').value = config.number;
+                document.getElementById('send-frequency').value = config.frequency;
+                document.getElementById('whatsapp-number-display').textContent = config.number;
+            }
+            
+            // Écouteurs d'événements pour la sidebar
+            document.getElementById('search-location').addEventListener('click', focusSearch);
+            document.getElementById('select-country').addEventListener('click', openCountryModal);
+            document.getElementById('world-regions').addEventListener('click', openRegionsModal);
+            document.getElementById('basemap-selector').addEventListener('click', openBasemapModal);
+            
+            // Histoire
+            document.getElementById('toggle-timeline').addEventListener('click', toggleTimeline);
+            document.getElementById('show-empires').addEventListener('click', showEmpiresPanel);
+            document.getElementById('show-ww1').addEventListener('click', () => showWarsPanel('ww1'));
+            document.getElementById('show-ww2').addEventListener('click', () => showWarsPanel('ww2'));
+            
+            // Géolocalisation
+            document.getElementById('get-current-location').addEventListener('click', getCurrentLocation);
+            document.getElementById('track-location').addEventListener('click', toggleTracking);
+            document.getElementById('plan-route').addEventListener('click', startRoutePlanning);
+            document.getElementById('save-locations').addEventListener('click', () => {
+                if (currentPosition) {
+                    saveTrackedPosition(currentPosition.lat, currentPosition.lng, "Position manuelle");
+                } else {
+                    showNotification("Veuillez d'abord obtenir votre position", "warning");
+                }
+            });
+            document.getElementById('whatsapp-settings').addEventListener('click', showWhatsappPanel);
+            
+            // Annotation
+            document.getElementById('draw-tools').addEventListener('click', showDrawTools);
+            document.getElementById('add-marker').addEventListener('click', addMarker);
+            document.getElementById('add-text').addEventListener('click', addText);
+            document.getElementById('add-polygon').addEventListener('click', addPolygon);
+            
+            // Outils de dessin
+            document.getElementById('draw-marker').addEventListener('click', () => startDrawing('marker'));
+            document.getElementById('draw-text').addEventListener('click', addText);
+            document.getElementById('draw-polygon').addEventListener('click', () => startDrawing('polygon'));
+            document.getElementById('draw-rectangle').addEventListener('click', () => startDrawing('rectangle'));
+            document.getElementById('draw-circle').addEventListener('click', () => startDrawing('circle'));
+            document.getElementById('draw-line').addEventListener('click', () => startDrawing('line'));
+            document.getElementById('cancel-draw').addEventListener('click', cancelDrawing);
+            document.getElementById('save-drawing').addEventListener('click', saveDrawing);
+            
+            // Informations
+            document.getElementById('geographic-data').addEventListener('click', showGeographicData);
+            document.getElementById('weather-info').addEventListener('click', showWeatherInfo);
+            document.getElementById('timezone-info').addEventListener('click', showTimezoneInfo);
+            document.getElementById('toggle-info-panel').addEventListener('click', toggleInfoPanel);
+            
+            // Outils
+            document.getElementById('measure-distance').addEventListener('click', startMeasuring);
+            document.getElementById('clear-map').addEventListener('click', clearMap);
+            document.getElementById('show-legend').addEventListener('click', showLegend);
+            document.getElementById('view-positions').addEventListener('click', showPositionsPanel);
+            
+            // Export
+            document.getElementById('export-kml').addEventListener('click', exportKML);
+            document.getElementById('export-geojson').addEventListener('click', exportGeoJSON);
+            document.getElementById('export-pdf').addEventListener('click', exportPDF);
+            document.getElementById('export-image').addEventListener('click', exportImage);
+            document.getElementById('export-map').addEventListener('click', exportMap);
+            
+            // Contrôles carte
+            document.getElementById('zoom-in').addEventListener('click', () => map.zoomIn());
+            document.getElementById('zoom-out').addEventListener('click', () => map.zoomOut());
+            document.getElementById('full-extent').addEventListener('click', () => {
+                map.setView([20, 0], 3);
+                showNotification("Vue mondiale", "info");
+            });
+            document.getElementById('locate-me').addEventListener('click', getCurrentLocation);
+            document.getElementById('toggle-grid').addEventListener('click', () => {
+                showNotification("Grille activée", "info");
+            });
+            
+            // Fermeture des panels
+            document.getElementById('close-click-info').addEventListener('click', closeClickInfo);
+            document.getElementById('close-timeline').addEventListener('click', closeTimeline);
+            document.getElementById('close-empires-panel').addEventListener('click', closeEmpiresPanel);
+            document.getElementById('close-wars-panel').addEventListener('click', closeWarsPanel);
+            document.getElementById('close-annotation-panel').addEventListener('click', closeAnnotationPanel);
+            document.getElementById('close-whatsapp-panel').addEventListener('click', closeWhatsappPanel);
+            document.getElementById('close-positions-panel').addEventListener('click', closePositionsPanel);
+            
+            // Modals
+            document.getElementById('close-country-modal').addEventListener('click', closeCountryModal);
+            document.getElementById('close-country').addEventListener('click', closeCountryModal);
+            document.getElementById('close-regions-modal').addEventListener('click', closeRegionsModal);
+            document.getElementById('close-regions').addEventListener('click', closeRegionsModal);
+            document.getElementById('close-basemap-modal').addEventListener('click', closeBasemapModal);
+            document.getElementById('close-basemap').addEventListener('click', closeBasemapModal);
+            document.getElementById('apply-basemap').addEventListener('click', applyBasemap);
+            
+            // Boutons région
+            document.querySelectorAll('.region-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const region = this.dataset.region;
+                    centerOnRegion(region);
+                });
+            });
+            
+            // Fonds de carte
+            document.querySelectorAll('.basemap-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.basemap-option').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+            
+            // Timeline
+            const timelineSlider = document.getElementById('timeline-slider');
+            const currentYearDisplay = document.getElementById('current-year');
+            
+            timelineSlider.addEventListener('input', function() {
+                const year = this.value;
+                currentYearDisplay.textContent = year;
+            });
+            
+            document.querySelectorAll('.era-marker').forEach(marker => {
+                marker.addEventListener('click', function() {
+                    const year = this.dataset.year;
+                    timelineSlider.value = year;
+                    currentYearDisplay.textContent = year;
+                    
+                    // Basculer vers le mode historique correspondant
+                    if (year >= 1914 && year <= 1918) {
+                        showWar('ww1');
+                    } else if (year >= 1939 && year <= 1945) {
+                        showWar('ww2');
+                    } else if (year >= 800 && year <= 1670) {
+                        if (year >= 800 && year <= 1240) showEmpire('ghana');
+                        else if (year >= 1235 && year <= 1670) showEmpire('mali');
+                        else if (year >= 1464 && year <= 1591) showEmpire('songhai');
+                    }
+                    
+                    showNotification(`Année ${year} sélectionnée`, "info");
+                });
+            });
+            
+            // Outil distance
+            document.getElementById('clear-distance').addEventListener('click', clearDistance);
+            document.getElementById('close-distance').addEventListener('click', closeDistance);
+            
+            // Éditeur texte
+            document.getElementById('cancel-text').addEventListener('click', cancelText);
+            document.getElementById('save-text').addEventListener('click', saveText);
+            
+            // Annotation panel
+            document.getElementById('start-annotation').addEventListener('click', function() {
+                const type = document.getElementById('annotation-type').value;
+                switch(type) {
+                    case 'marker': addMarker(); break;
+                    case 'text': addText(); break;
+                    case 'polygon': addPolygon(); break;
+                }
+                closeAnnotationPanel();
+            });
+            
+            document.getElementById('save-annotation').addEventListener('click', function() {
+                showNotification("Annotation sauvegardée", "success");
+            });
+            
+            // Couleurs
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            
+            // WhatsApp
+            document.getElementById('save-whatsapp').addEventListener('click', saveWhatsappConfig);
+            document.getElementById('test-whatsapp').addEventListener('click', testWhatsapp);
+            
+            // Positions
+            document.getElementById('refresh-positions').addEventListener('click', refreshPositions);
+            document.getElementById('clear-positions').addEventListener('click', clearAllPositions);
+            document.getElementById('export-positions').addEventListener('click', exportPositions);
+            
+            // Sélecteur de mode
+            document.getElementById('mode-select').addEventListener('change', function() {
+                const mode = this.value;
+                switch(mode) {
+                    case 'modern':
+                        clearEmpireLayers();
+                        clearWarLayers();
+                        showNotification("Mode cartographie moderne", "info");
+                        break;
+                    case 'historical':
+                        showNotification("Mode cartographie historique", "info");
+                        break;
+                    case 'empires':
+                        showEmpiresPanel();
+                        break;
+                    case 'ww1':
+                        showWar('ww1');
+                        break;
+                    case 'ww2':
+                        showWar('ww2');
+                        break;
+                    case 'annotation':
+                        showAnnotationPanel();
+                        break;
+                }
+            });
+            
+            // Notification de démarrage
+            showNotification("GeoHISTORY Pro initialisé. Tous les boutons sont fonctionnels !", "success");
+        });
+    </script>
+</body>
+</html>

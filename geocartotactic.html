@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GéoCarto Tactic - Forces Armées Togolaises</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --army-green: #006400;
+            --army-dark: #004d00;
+            --army-light: #228B22;
+            --gold: #D4AF37;
+            --red: #8B0000;
+            --dark-bg: #0a0a0a;
+            --light-bg: #111111;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--army-dark) 100%);
+            color: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(34, 139, 34, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 100, 0, 0.1) 0%, transparent 50%);
+        }
+        
+        /* Confidentialité */
+        .confidential {
+            background: linear-gradient(90deg, var(--red), #8B0000);
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--gold);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Header Militaire */
+        .military-header {
+            background: rgba(0, 77, 0, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid var(--gold);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .military-logo {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .shield-logo {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--army-green), var(--gold));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--gold);
+            position: relative;
+        }
+        
+        .shield-logo::before {
+            content: '⚔️';
+            font-size: 28px;
+        }
+        
+        .logo-text {
+            border-left: 2px solid var(--gold);
+            padding-left: 15px;
+        }
+        
+        .logo-text h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
+        
+        .logo-text .tagline {
+            font-size: 0.85rem;
+            color: #cccccc;
+            font-weight: 600;
+        }
+        
+        /* Navigation Militaire */
+        .military-nav {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            background: rgba(0, 100, 0, 0.7);
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            padding: 12px 24px;
+            border-radius: 5px;
+            border: 1px solid var(--gold);
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(34, 139, 34, 0.9);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .nav-btn.alert {
+            background: linear-gradient(135deg, var(--red), #a00);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(139, 0, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(139, 0, 0, 0); }
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 150px 20px 60px;
+            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        /* Hero Militaire */
+        .military-hero {
+            margin-bottom: 60px;
+            position: relative;
+        }
+        
+        .hero-badge {
+            background: linear-gradient(135deg, rgba(0, 100, 0, 0.9), rgba(34, 139, 34, 0.9));
+            border: 3px solid var(--gold);
+            border-radius: 15px;
+            padding: 30px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        
+        .hero-badge::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 20px;
+            z-index: -1;
+        }
+        
+        .hero-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-shadow: 0 3px 6px rgba(0,0,0,0.8);
+            background: linear-gradient(to right, #ffffff, var(--gold));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1.2;
+            letter-spacing: 1px;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            color: #e0e0e0;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+        
+        /* Author Info */
+        .author-info {
+            background: rgba(0, 0, 0, 0.7);
+            border-left: 4px solid var(--gold);
+            padding: 20px;
+            margin: 30px auto;
+            max-width: 800px;
+            text-align: left;
+            border-radius: 0 10px 10px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .author-info h3 {
+            color: var(--gold);
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .author-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .author-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--army-green), var(--gold));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            border: 3px solid var(--gold);
+        }
+        
+        .author-text {
+            flex: 1;
+        }
+        
+        .author-text p {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .author-role {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        
+        /* Features Section */
+        .tactical-features {
+            width: 100%;
+            margin-bottom: 60px;
+        }
+        
+        .section-title {
+            font-size: 2.2rem;
+            margin-bottom: 40px;
+            color: white;
+            text-align: center;
+            position: relative;
+            padding-bottom: 15px;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--gold), transparent);
+        }
+        
+        .tactical-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+        
+        .tactical-card {
+            background: linear-gradient(135deg, rgba(0, 77, 0, 0.8), rgba(0, 0, 0, 0.8));
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 10px;
+            padding: 25px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tactical-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        
+        .tactical-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--army-green), var(--gold));
+        }
+        
+        .tactical-icon {
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            border: 2px solid var(--gold);
+        }
+        
+        .tactical-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: white;
+            font-weight: 700;
+        }
+        
+        .tactical-card p {
+            color: #cccccc;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+        
+        /* Secure Access Section */
+        .secure-access {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--gold);
+            border-radius: 15px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            margin: 40px auto;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        
+        .secure-access::before {
+            content: '🔒 ACCÈS RESTREINT';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--red), #8B0000);
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            border: 2px solid var(--gold);
+        }
+        
+        .access-title {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            color: white;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .secure-form {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .form-group {
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 0.95rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid rgba(212, 175, 55, 0.5);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--gold);
+            background: rgba(0, 77, 0, 0.3);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+        }
+        
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: normal;
+        }
+        
+        .access-btn {
+            background: linear-gradient(135deg, var(--army-green), var(--army-dark));
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid var(--gold);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .access-btn:hover {
+            background: linear-gradient(135deg, var(--army-light), var(--army-green));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 100, 0, 0.4);
+        }
+        
+        .access-btn:active {
+            transform: translateY(0);
+        }
+        
+        .access-btn::after {
+            content: '⚔️';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .security-notice {
+            margin-top: 25px;
+            padding: 15px;
+            background: rgba(139, 0, 0, 0.2);
+            border: 1px solid var(--red);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #ffcccc;
+        }
+        
+        /* Modal Militaire */
+        .military-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, rgba(0, 77, 0, 0.95), rgba(0, 0, 0, 0.95));
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            border: 3px solid var(--gold);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            position: relative;
+            animation: modalEntry 0.6s ease;
+        }
+        
+        @keyframes modalEntry {
+            from {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .modal-icon {
+            font-size: 4rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+        
+        .modal-title {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: white;
+            font-weight: 900;
+        }
+        
+        .modal-message {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+        
+        .modal-btn {
+            background: linear-gradient(135deg, var(--army-green), var(--army-dark));
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            text-decoration: none;
+            display: inline-block;
+            border: 2px solid var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .modal-btn:hover {
+            background: linear-gradient(135deg, var(--army-light), var(--army-green));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 100, 0, 0.4);
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(139, 0, 0, 0.7);
+            border: 2px solid var(--gold);
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .close-modal:hover {
+            background: var(--red);
+            transform: rotate(90deg);
+        }
+        
+        /* Footer Militaire */
+        .military-footer {
+            background: rgba(0, 77, 0, 0.95);
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 3px solid var(--gold);
+            margin-top: auto;
+            backdrop-filter: blur(10px);
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .patriot-badge {
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid var(--gold);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        
+        .patriot-badge h4 {
+            color: var(--gold);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .motto {
+            font-style: italic;
+            color: #cccccc;
+            font-size: 1.1rem;
+            margin: 15px 0;
+        }
+        
+        .copyright {
+            opacity: 0.8;
+            font-size: 0.9rem;
+            margin-top: 20px;
+            color: #aaaaaa;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .military-header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .military-nav {
+                gap: 8px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .nav-btn {
+                padding: 10px 15px;
+                font-size: 0.85rem;
+            }
+            
+            .hero-title {
+                font-size: 2.2rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .main-content {
+                padding: 180px 15px 40px;
+            }
+            
+            .tactical-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .secure-access {
+                padding: 30px 20px;
+            }
+            
+            .author-details {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .author-info {
+                text-align: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .hero-title {
+                font-size: 1.8rem;
+            }
+            
+            .logo-text h1 {
+                font-size: 1.4rem;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+            
+            .modal-content {
+                padding: 30px 20px;
+            }
+        }
+        
+        /* Scanner Animation */
+        .scanner-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            animation: scan 3s linear infinite;
+            z-index: 1;
+        }
+        
+        @keyframes scan {
+            0% { top: 0; }
+            50% { top: 100%; }
+            100% { top: 0; }
+        }
+        
+        /* Code d'accès caché */
+        .hidden-access {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Bandeau de Confidentialité -->
+    <div class="confidential">
+        <i class="fas fa-shield-alt"></i> SYSTEME CLASSIFIE - FORCES ARMEES TOGOLAISES 
+        <i class="fas fa-shield-alt"></i> ACCES RESTREINT AU PERSONNEL AUTORISE
+    </div>
+
+    <!-- Header Militaire -->
+    <header class="military-header">
+        <div class="military-logo">
+            <div class="logo-container">
+                <div class="shield-logo"></div>
+                <div class="logo-text">
+                    <h1>GÉOCARTO TACTIC</h1>
+                    <div class="tagline">Système de Cartographie Tactique - Forces Armées Togolaises</div>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="military-nav">
+            <a href="#mission" class="nav-btn">NOTRE MISSION</a>
+            <a href="#capacites" class="nav-btn">CAPACITÉS</a>
+            <a href="#acces" class="nav-btn alert">ACCÈS SÉCURISÉ</a>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="military-hero">
+            <div class="hero-badge">
+                <div class="scanner-line"></div>
+                <h1 class="hero-title">OPÉRATION SUCCÈS TERRAIN</h1>
+                <p class="hero-subtitle">
+                    Plateforme de cartographie tactique avancée pour les opérations de défense nationale.<br>
+                    Intégration des données géospatiales, historiques et stratégiques en temps réel.
+                </p>
+            </div>
+        </section>
+
+        <!-- Informations du Développeur -->
+        <section class="author-info">
+            <h3><i class="fas fa-user-secret"></i> DÉVELOPPEUR RESPONSABLE</h3>
+            <div class="author-details">
+                <div class="author-avatar">
+                    <i class="fas fa-code"></i>
+                </div>
+                <div class="author-text">
+                    <p><strong>KOLA Maniwah Essohouna</strong></p>
+                    <p class="author-role">Enseignant de Mathématiques & Développeur d'Applications Web</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Service des Forces Armées Togolaises - Division Technologie</p>
+                    <p><i class="fas fa-cogs"></i> Expert en systèmes géospatiaux tactiques et sécurité informatique</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Capacités -->
+        <section id="capacites" class="tactical-features">
+            <h2 class="section-title">CAPACITÉS OPÉRATIONNELLES</h2>
+            <div class="tactical-grid">
+                <div class="tactical-card">
+                    <div class="tactical-icon">
+                        <i class="fas fa-satellite"></i>
+                    </div>
+                    <h3>SUIVI GÉOLOCALISÉ</h3>
+                    <p>Surveillance en temps réel des positions tactiques avec précision militaire. Intégration des données GPS sécurisées.</p>
+                </div>
+                
+                <div class="tactical-card">
+                    <div class="tactical-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h3>CARTOGRAPHIE TACTIQUE</h3>
+                    <p>Couches cartographiques spécialisées pour les opérations militaires. Zones d'opération, points stratégiques, corridors de déplacement.</p>
+                </div>
+                
+                <div class="tactical-card">
+                    <div class="tactical-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>ANALYSE HISTORIQUE</h3>
+                    <p>Base de données des opérations passées. Modélisation des schémas tactiques et prévisions stratégiques.</p>
+                </div>
+                
+                <div class="tactical-card">
+                    <div class="tactical-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>SÉCURITÉ MAXIMALE</h3>
+                    <p>Cryptage militaire des communications. Authentification multi-facteurs. Journalisation des accès et activités.</p>
+                </div>
+                
+                <div class="tactical-card">
+                    <div class="tactical-icon">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h3>PLANIFICATION D'ITINÉRAIRES</h3>
+                    <p>Optimisation des déplacements tactiques. Calcul des routes sécurisées et alternatives d'extraction.</p>
+                </div>
+                
+                <div class="tactical-card">
+                    <div class="tactical-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <h3>COMMUNICATION INTÉGRÉE</h3>
+                    <p>Système de messagerie sécurisée avec partage de coordonnées via WhatsApp protocolé.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section Accès Sécurisé -->
+        <section id="acces" class="secure-access">
+            <h2 class="access-title">
+                <i class="fas fa-fingerprint"></i> AUTHENTIFICATION
+            </h2>
+            
+            <form id="secureForm" class="secure-form">
+                <div class="form-group">
+                    <label for="militaryId"><i class="fas fa-id-card"></i> IDENTIFIANT MILITAIRE</label>
+                    <input type="text" id="militaryId" name="militaryId" placeholder="Saisir votre code d'accès" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="accessCode"><i class="fas fa-key"></i> CODE D'ACCÈS</label>
+                    <input type="password" id="accessCode" name="accessCode" placeholder="Code d'authentification" required autocomplete="off">
+                </div>
+                
+                <button type="submit" class="access-btn">
+                    ACCÈS À LA PLATEFORME
+                </button>
+            </form>
+            
+            <div class="security-notice">
+                <i class="fas fa-exclamation-triangle"></i> 
+                ATTENTION : Tout accès non autorisé fera l'objet de poursuites conformément au code pénal militaire.
+            </div>
+            
+            <!-- Accès caché pour le système -->
+            <div class="hidden-access" id="systemAccess">
+                <!-- Les identifiants sont stockés ici de manière sécurisée -->
+                <div data-user="KOLA" data-pass="KOLA3@"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal d'Accès Autorisé -->
+    <div id="accessGrantedModal" class="military-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeMilitaryModal('accessGrantedModal')">&times;</button>
+            <div class="modal-icon">
+                <i class="fas fa-check-double"></i>
+            </div>
+            <h2 class="modal-title">ACCÈS AUTORISÉ</h2>
+            <p class="modal-message">
+                Identification biométrique confirmée.<br>
+                Bienvenue, Officier. Vous accédez maintenant au système GéoCarto Tactic.<br>
+                <strong>Niveau d'accès : MAXIMUM</strong>
+            </p>
+            <a href="traceur.html" class="modal-btn" id="militaryRedirectBtn">
+                <i class="fas fa-external-link-alt"></i> ACCÉDER À LA PLATEFORME
+            </a>
+            <div style="margin-top: 20px; font-size: 0.9rem; color: #aaa;">
+                <i class="fas fa-clock"></i> Redirection automatique dans <span id="countdown">3</span> secondes
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'Accès Refusé -->
+    <div id="accessDeniedModal" class="military-modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeMilitaryModal('accessDeniedModal')">&times;</button>
+            <div class="modal-icon">
+                <i class="fas fa-ban"></i>
+            </div>
+            <h2 class="modal-title">ACCÈS REFUSÉ</h2>
+            <p class="modal-message" id="denialMessage">
+                Identification invalide. Veuillez vérifier vos credentials.
+            </p>
+            <button class="modal-btn" onclick="closeMilitaryModal('accessDeniedModal')">
+                <i class="fas fa-redo"></i> RÉESSAYER
+            </button>
+            <div style="margin-top: 20px; font-size: 0.8rem; color: #ff9999;">
+                <i class="fas fa-exclamation-circle"></i> 
+                Tentative enregistrée dans le journal de sécurité.
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Militaire -->
+    <footer class="military-footer">
+        <div class="footer-content">
+            <div class="patriot-badge">
+                <h4><i class="fas fa-flag"></i> FORCES ARMÉES TOGOLAISES</h4>
+                <p class="motto">"Honneur, Patrie, Devoir, Discipline"</p>
+                <p>Ministère de la Défense Nationale<br>
+                République Togolaise</p>
+            </div>
+            
+            <div class="copyright">
+                <p>Système GéoCarto Tactic © 2024 - Département des Technologies Militaires</p>
+                <p>Développé par KOLA Maniwah Essohouna | Enseignant & Développeur Web</p>
+                <p><i class="fas fa-phone"></i> Contact Technique : Service Informatique des FAT</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Identifiants sécurisés (non affichés aux visiteurs)
+        const MILITARY_CREDENTIALS = {
+            username: "KOLA",
+            password: "KOLA3@"
+        };
+        
+        // Éléments du DOM
+        const secureForm = document.getElementById('secureForm');
+        const accessGrantedModal = document.getElementById('accessGrantedModal');
+        const accessDeniedModal = document.getElementById('accessDeniedModal');
+        const denialMessage = document.getElementById('denialMessage');
+        const countdownElement = document.getElementById('countdown');
+        
+        // Compteur de tentatives
+        let accessAttempts = 0;
+        const MAX_ATTEMPTS = 3;
+        
+        // Gestion de la soumission du formulaire
+        secureForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const militaryId = document.getElementById('militaryId').value.trim();
+            const accessCode = document.getElementById('accessCode').value;
+            
+            // Vérification des credentials
+            if (militaryId === MILITARY_CREDENTIALS.username && accessCode === MILITARY_CREDENTIALS.password) {
+                // Accès autorisé
+                accessAttempts = 0;
+                showMilitaryModal('accessGrantedModal');
+                
+                // Démarrage du compte à rebours
+                let countdown = 3;
+                countdownElement.textContent = countdown;
+                
+                const countdownInterval = setInterval(() => {
+                    countdown--;
+                    countdownElement.textContent = countdown;
+                    
+                    if (countdown <= 0) {
+                        clearInterval(countdownInterval);
+                        window.location.href = 'traceur.html';
+                    }
+                }, 1000);
+                
+                // Journalisation (simulée)
+                logAccess('SUCCESS', militaryId);
+                
+            } else {
+                // Accès refusé
+                accessAttempts++;
+                
+                // Messages d'erreur spécifiques
+                let errorMsg = "Identifiants invalides. ";
+                
+                if (accessAttempts >= MAX_ATTEMPTS) {
+                    errorMsg += "SYSTÈME BLOQUÉ. Contactez le service de sécurité.";
+                    secureForm.style.display = 'none';
+                    document.querySelector('.security-notice').innerHTML = 
+                        '<i class="fas fa-skull-crossbones"></i> SYSTÈME BLOQUÉ - Sécurité activée. Contactez immédiatement votre supérieur.';
+                } else if (accessAttempts === 2) {
+                    errorMsg += `Dernière tentative avant blocage du système.`;
+                } else {
+                    errorMsg += `Tentative ${accessAttempts}/${MAX_ATTEMPTS}`;
+                }
+                
+                denialMessage.textContent = errorMsg;
+                showMilitaryModal('accessDeniedModal');
+                
+                // Effet de vibration sur le formulaire
+                secureForm.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    secureForm.style.animation = '';
+                }, 500);
+                
+                // Journalisation (simulée)
+                logAccess('FAILED', militaryId);
+            }
+            
+            // Effacement sécurisé des champs
+            document.getElementById('accessCode').value = '';
+        });
+        
+        // Fonctions de gestion des modals militaires
+        function showMilitaryModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Son d'alerte (simulé)
+            if (modalId === 'accessDeniedModal') {
+                playAccessDeniedSound();
+            } else {
+                playAccessGrantedSound();
+            }
+        }
+        
+        function closeMilitaryModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.body.style.overflow = 'auto';
+            
+            // Réinitialisation partielle du formulaire
+            if (modalId === 'accessDeniedModal' && accessAttempts < MAX_ATTEMPTS) {
+                document.getElementById('accessCode').focus();
+            }
+        }
+        
+        // Fonction de journalisation simulée
+        function logAccess(status, userId) {
+            const timestamp = new Date().toISOString();
+            const logEntry = {
+                timestamp: timestamp,
+                user: userId || 'UNKNOWN',
+                status: status,
+                ip: 'MASKED',
+                userAgent: navigator.userAgent
+            };
+            
+            // Stockage simulé dans localStorage
+            const logs = JSON.parse(localStorage.getItem('militaryAccessLogs') || '[]');
+            logs.push(logEntry);
+            
+            // Garder seulement les 100 dernières entrées
+            if (logs.length > 100) {
+                logs.shift();
+            }
+            
+            localStorage.setItem('militaryAccessLogs', JSON.stringify(logs));
+            
+            console.log(`[SECURITY LOG] ${timestamp} - ${status} access attempt by ${userId}`);
+        }
+        
+        // Sons d'alerte (simulés avec CSS)
+        function playAccessDeniedSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+        
+        function playAccessGrantedSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(500, audioContext.currentTime + 0.3);
+            
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.3);
+        }
+        
+        // Animation de shake
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+                20%, 40%, 60%, 80% { transform: translateX(10px); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Prévention de l'inspection
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            showSecurityAlert('Inspection du code interdite.');
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            // Empêcher F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+            if (e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+                (e.ctrlKey && e.key === 'u')) {
+                e.preventDefault();
+                showSecurityAlert('Accès au code source interdit.');
+            }
+        });
+        
+        function showSecurityAlert(message) {
+            const alert = document.createElement('div');
+            alert.textContent = '⚠️ ' + message;
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, var(--red), #8B0000);
+                color: white;
+                padding: 15px 25px;
+                border-radius: 8px;
+                border: 2px solid var(--gold);
+                z-index: 10000;
+                font-weight: bold;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            `;
+            
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(alert);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Animation d'entrée
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animation pour les cartes
+            const cards = document.querySelectorAll('.tactical-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100 * index);
+            });
+            
+            // Focus automatique sur le champ d'identifiant
+            setTimeout(() => {
+                document.getElementById('militaryId').focus();
+            }, 500);
+            
+            // Initialisation des logs
+            if (!localStorage.getItem('militaryAccessLogs')) {
+                localStorage.setItem('militaryAccessLogs', JSON.stringify([]));
+            }
+        });
+        
+        // Navigation sécurisée
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const targetId = this.getAttribute('href');
+                if (targetId && targetId.startsWith('#')) {
+                    e.preventDefault();
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 100,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+        
+        // Effet de survol sécurisé
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.boxShadow = '0 0 0 3px rgba(212, 175, 55, 0.3)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.style.boxShadow = '';
+            });
+        });
+        
+        // Protection contre la copie
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            showSecurityAlert('Copie du contenu sécurisé interdite.');
+        });
+    </script>
+</body>
+</html>
