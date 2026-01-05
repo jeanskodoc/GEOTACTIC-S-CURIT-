@@ -24,6 +24,8 @@
             --tracking-orange: #FF5722;
             --route-color: #8B0000;
             --my-position-color: #FF00FF;
+            --export-color: #9C27B0;
+            --import-color: #2196F3;
         }
         
         * {
@@ -170,6 +172,16 @@
             border-left: 3px solid var(--my-position-color);
         }
         
+        .tool-btn.export {
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(156, 39, 176, 0.4));
+            border-left: 3px solid var(--export-color);
+        }
+        
+        .tool-btn.import {
+            background: linear-gradient(135deg, rgba(33, 150, 243, 0.2), rgba(33, 150, 243, 0.4));
+            border-left: 3px solid var(--import-color);
+        }
+        
         .tool-btn i {
             margin-right: 8px;
             width: 16px;
@@ -263,6 +275,14 @@
         
         .action-btn.position {
             background: linear-gradient(135deg, var(--my-position-color), #CC00CC);
+        }
+        
+        .action-btn.export {
+            background: linear-gradient(135deg, var(--export-color), #7B1FA2);
+        }
+        
+        .action-btn.import {
+            background: linear-gradient(135deg, var(--import-color), #1976D2);
         }
         
         .location-info {
@@ -782,6 +802,159 @@
             border-left-color: var(--my-position-color);
         }
         
+        .notification.export {
+            border-left-color: var(--export-color);
+        }
+        
+        .notification.import {
+            border-left-color: var(--import-color);
+        }
+        
+        /* Modal d'importation */
+        .import-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 4000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+        
+        .import-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .import-content {
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            padding: 25px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+            border: 3px solid var(--import-color);
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+        }
+        
+        .import-modal.active .import-content {
+            transform: translateY(0);
+        }
+        
+        .import-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--import-color);
+        }
+        
+        .import-header h3 {
+            color: var(--import-color);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .close-import {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #666;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .close-import:hover {
+            color: var(--import-color);
+        }
+        
+        .file-upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .file-upload-area:hover {
+            border-color: var(--import-color);
+            background: rgba(33, 150, 243, 0.05);
+        }
+        
+        .file-upload-area.dragover {
+            border-color: var(--import-color);
+            background: rgba(33, 150, 243, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--import-color);
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-info {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .file-info.active {
+            display: block;
+        }
+        
+        .file-name {
+            font-weight: bold;
+            color: var(--import-color);
+            margin-bottom: 5px;
+        }
+        
+        .file-size {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .import-options {
+            margin-top: 20px;
+        }
+        
+        .option-group {
+            margin-bottom: 15px;
+        }
+        
+        .option-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .option-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
         /* Animations */
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
@@ -920,6 +1093,11 @@
                 left: 5%;
                 bottom: 10px;
             }
+            
+            .import-content {
+                width: 95%;
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -1036,6 +1214,28 @@
                 </div>
             </div>
             
+            <!-- Import/Export -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>IMPORT/EXPORT</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn import" id="import-data">
+                        <i class="fas fa-file-import"></i>
+                        Importer JSON
+                    </button>
+                    <button class="tool-btn export" id="export-kml">
+                        <i class="fas fa-file-export"></i>
+                        Exporter KML
+                    </button>
+                    <button class="tool-btn" id="export-data">
+                        <i class="fas fa-database"></i>
+                        Exporter JSON
+                    </button>
+                </div>
+            </div>
+            
             <!-- Partage WhatsApp -->
             <div class="tool-group">
                 <div class="tool-group-title">
@@ -1064,10 +1264,6 @@
                     <button class="tool-btn" id="system-status">
                         <i class="fas fa-heartbeat"></i>
                         État système
-                    </button>
-                    <button class="tool-btn" id="export-data">
-                        <i class="fas fa-database"></i>
-                        Exporter données
                     </button>
                     <button class="tool-btn" id="reset-system">
                         <i class="fas fa-redo"></i>
@@ -1112,6 +1308,7 @@
                         <option value="tracking">SUIVI AUTOMATIQUE</option>
                         <option value="measure">MESURE</option>
                         <option value="edit">ÉDITION</option>
+                        <option value="import">IMPORTATION</option>
                     </select>
                     <button class="action-btn tracking" id="tracking-toggle">
                         <i class="fas fa-play"></i> DÉMARRER
@@ -1320,6 +1517,74 @@
         </div>
     </div>
     
+    <!-- Modal d'importation -->
+    <div class="import-modal" id="import-modal">
+        <div class="import-content">
+            <div class="import-header">
+                <h3><i class="fas fa-file-import"></i> IMPORTATION DE DONNÉES</h3>
+                <button class="close-import" id="close-import">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="file-upload-area" id="file-drop-area">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h4>Glissez-déposez votre fichier ici</h4>
+                <p style="color: #666; margin: 10px 0;">Ou cliquez pour parcourir</p>
+                <p style="font-size: 0.9rem; color: #888;">
+                    Formats supportés: JSON (exporté depuis GeoHISTORY Pro)
+                </p>
+                <input type="file" id="file-input" class="file-input" accept=".json,.geojson">
+            </div>
+            
+            <div class="file-info" id="file-info">
+                <div class="file-name" id="file-name"></div>
+                <div class="file-size" id="file-size"></div>
+            </div>
+            
+            <div class="import-options">
+                <div class="option-group">
+                    <label>
+                        <input type="checkbox" id="import-positions" checked>
+                        <span>Importer les positions GPS</span>
+                    </label>
+                </div>
+                
+                <div class="option-group">
+                    <label>
+                        <input type="checkbox" id="import-markers" checked>
+                        <span>Importer les marqueurs</span>
+                    </label>
+                </div>
+                
+                <div class="option-group">
+                    <label>
+                        <input type="checkbox" id="import-shapes" checked>
+                        <span>Importer les formes dessinées</span>
+                    </label>
+                </div>
+                
+                <div class="option-group">
+                    <label>
+                        <input type="checkbox" id="import-settings" checked>
+                        <span>Importer les paramètres</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="tracking-controls" style="margin-top: 25px;">
+                <button class="action-btn import" id="confirm-import" style="flex: 2;" disabled>
+                    <i class="fas fa-file-import"></i> IMPORTER LES DONNÉES
+                </button>
+                <button class="action-btn" id="cancel-import" style="flex: 1;">
+                    <i class="fas fa-times"></i> ANNULER
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Notification -->
     <div class="notification" id="notification">
         <i class="fas fa-info-circle"></i>
@@ -1360,29 +1625,30 @@
         let savedPositions = [];
         let isShowingMyPosition = false;
         let isFullscreen = false;
+        let importedFile = null;
         
         // Configuration GPS OPTIMISÉE
         const GPS_CONFIG = {
-            highAccuracy: true,          // Haute précision activée
-            maximumAge: 5000,            // 5 secondes max pour données en cache
-            timeout: 10000,              // 10 secondes de timeout (optimisé)
-            enableHighAccuracy: true,    // Forcer haute précision
-            maxHistory: 1000,            // Historique augmenté
-            autoCenterZoom: 16,          // Zoom pour centrage automatique
-            positionUpdateInterval: 1000, // Intervalle de mise à jour
-            minDistance: 3,              // Distance minimale réduite pour suivi fluide
+            highAccuracy: true,
+            maximumAge: 5000,
+            timeout: 10000,
+            enableHighAccuracy: true,
+            maxHistory: 1000,
+            autoCenterZoom: 16,
+            positionUpdateInterval: 1000,
+            minDistance: 3,
             whatsappPhone: "+22892871605",
-            fallbackMode: false,         // Mode dégradé
-            useIPLocation: true,         // Utiliser la localisation par IP
-            cachePosition: true,         // Mettre en cache la position
-            retryAttempts: 5,            // Tentatives de reconnexion
+            fallbackMode: false,
+            useIPLocation: true,
+            cachePosition: true,
+            retryAttempts: 5,
             satelliteCount: 0,
             gpsSignalQuality: "unknown",
-            maxAccuracyThreshold: 100,   // Seuil de précision max en mètres
-            minAccuracyThreshold: 5,     // Seuil de précision min
-            accuracyFilter: true,        // Filtrer les positions trop imprécises
-            driftCorrection: true,       // Correction de dérive GPS
-            smoothing: true              // Lissage des positions
+            maxAccuracyThreshold: 100,
+            minAccuracyThreshold: 5,
+            accuracyFilter: true,
+            driftCorrection: true,
+            smoothing: true
         };
         
         // Variables de contrôle GPS
@@ -1394,7 +1660,7 @@
         let isGpsInitialized = false;
         let fallbackPosition = null;
         let gpsWatchActive = false;
-        let positionQueue = [];          // File d'attente pour lissage
+        let positionQueue = [];
         let lastValidAccuracy = null;
         
         // =================== INITIALISATION ===================
@@ -1410,7 +1676,7 @@
                 zoomControl: false,
                 preferCanvas: true,
                 attributionControl: false,
-                maxBounds: [[-90, -180], [90, 180]], // Limites mondiales
+                maxBounds: [[-90, -180], [90, 180]],
                 maxBoundsViscosity: 1.0
             }).setView([8.6195, 0.8248], 8);
             
@@ -1420,12 +1686,6 @@
                 attribution: '© OpenStreetMap',
                 detectRetina: true
             }).addTo(map);
-            
-            // Ajouter une couche satellite optionnelle
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 19,
-                attribution: '© Esri'
-            });
             
             // Ajouter le groupe pour les éléments dessinés
             drawnItems.addTo(map);
@@ -1476,10 +1736,536 @@
             console.log("✅ Carte initialisée avec succès");
         }
         
+        // =================== FONCTIONS D'IMPORTATION ===================
+        
+        function showImportModal() {
+            const modal = document.getElementById('import-modal');
+            modal.classList.add('active');
+            
+            // Réinitialiser le formulaire
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-info').classList.remove('active');
+            document.getElementById('confirm-import').disabled = true;
+            importedFile = null;
+            
+            showNotification("Prêt à importer des données", "import");
+        }
+        
+        function setupFileUpload() {
+            const fileInput = document.getElementById('file-input');
+            const fileDropArea = document.getElementById('file-drop-area');
+            const fileInfo = document.getElementById('file-info');
+            const confirmBtn = document.getElementById('confirm-import');
+            
+            // Gestion du clic sur la zone de dépôt
+            fileDropArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // Gestion du changement de fichier
+            fileInput.addEventListener('change', (e) => {
+                handleFileSelection(e.target.files[0]);
+            });
+            
+            // Gestion du drag and drop
+            fileDropArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                fileDropArea.classList.add('dragover');
+            });
+            
+            fileDropArea.addEventListener('dragleave', () => {
+                fileDropArea.classList.remove('dragover');
+            });
+            
+            fileDropArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                fileDropArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileSelection(e.dataTransfer.files[0]);
+                }
+            });
+            
+            function handleFileSelection(file) {
+                if (!file) return;
+                
+                // Vérifier l'extension du fichier
+                const validExtensions = ['.json', '.geojson'];
+                const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+                
+                if (!validExtensions.includes(fileExtension)) {
+                    showNotification("Format de fichier non supporté. Utilisez .json ou .geojson", "warning");
+                    return;
+                }
+                
+                // Vérifier la taille du fichier (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    showNotification("Fichier trop volumineux (max 10MB)", "warning");
+                    return;
+                }
+                
+                importedFile = file;
+                
+                // Afficher les informations du fichier
+                document.getElementById('file-name').textContent = file.name;
+                document.getElementById('file-size').textContent = formatFileSize(file.size);
+                fileInfo.classList.add('active');
+                confirmBtn.disabled = false;
+                
+                showNotification(`Fichier sélectionné: ${file.name}`, "import");
+            }
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function importDataFromFile() {
+            if (!importedFile) {
+                showNotification("Aucun fichier sélectionné", "warning");
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    processImportedData(data);
+                } catch (error) {
+                    console.error("Erreur lors du parsing du fichier:", error);
+                    showNotification("Fichier JSON invalide", "warning");
+                }
+            };
+            
+            reader.onerror = function() {
+                showNotification("Erreur lors de la lecture du fichier", "warning");
+            };
+            
+            reader.readAsText(importedFile);
+        }
+        
+        function processImportedData(data) {
+            console.log("📂 Données importées:", data);
+            
+            // Vérifier la structure des données
+            if (!data || typeof data !== 'object') {
+                showNotification("Format de données invalide", "warning");
+                return;
+            }
+            
+            let importedCount = 0;
+            
+            // Importer les positions historiques
+            if (document.getElementById('import-positions').checked && data.positionHistory) {
+                if (Array.isArray(data.positionHistory)) {
+                    data.positionHistory.forEach(pos => {
+                        if (pos.lat && pos.lng) {
+                            positionHistory.push({
+                                lat: parseFloat(pos.lat),
+                                lng: parseFloat(pos.lng),
+                                timestamp: pos.timestamp ? new Date(pos.timestamp) : new Date()
+                            });
+                            importedCount++;
+                        }
+                    });
+                    
+                    // Mettre à jour le trajet
+                    updatePositionPath();
+                }
+            }
+            
+            // Importer les positions sauvegardées
+            if (document.getElementById('import-markers').checked && data.savedPositions) {
+                if (Array.isArray(data.savedPositions)) {
+                    data.savedPositions.forEach(savedPos => {
+                        if (savedPos.lat && savedPos.lng) {
+                            const position = {
+                                lat: parseFloat(savedPos.lat),
+                                lng: parseFloat(savedPos.lng),
+                                timestamp: savedPos.timestamp ? new Date(savedPos.timestamp) : new Date(),
+                                name: savedPos.name || `Position importée ${savedPositions.length + 1}`
+                            };
+                            
+                            savedPositions.push(position);
+                            
+                            // Ajouter un marqueur sur la carte
+                            const savedMarker = L.marker([position.lat, position.lng], {
+                                icon: L.divIcon({
+                                    className: 'saved-position-marker',
+                                    html: '<i class="fas fa-bookmark" style="color: #FFD700; font-size: 28px;"></i>',
+                                    iconSize: [28, 28],
+                                    iconAnchor: [14, 28]
+                                })
+                            }).addTo(map);
+                            
+                            savedMarker.bindPopup(`
+                                <div style="min-width: 200px;">
+                                    <h4 style="margin: 0 0 10px 0; color: #FFD700;">
+                                        <i class="fas fa-bookmark"></i> POSITION IMPORTÉE
+                                    </h4>
+                                    <div style="font-size: 0.9rem;">
+                                        <div><strong>Nom:</strong> ${position.name}</div>
+                                        <div><strong>Latitude:</strong> ${position.lat.toFixed(6)}°</div>
+                                        <div><strong>Longitude:</strong> ${position.lng.toFixed(6)}°</div>
+                                        <div><strong>Date:</strong> ${position.timestamp.toLocaleDateString()}</div>
+                                        <div><strong>Heure:</strong> ${position.timestamp.toLocaleTimeString()}</div>
+                                    </div>
+                                </div>
+                            `);
+                            
+                            drawnItems.addLayer(savedMarker);
+                            importedCount++;
+                        }
+                    });
+                    
+                    savePositionsToStorage();
+                }
+            }
+            
+            // Importer les formes dessinées (simplifié)
+            if (document.getElementById('import-shapes').checked && data.customMarkers) {
+                // Pour des formes plus complexes, on pourrait utiliser GeoJSON
+                console.log("Formes disponibles pour importation:", data.customMarkers);
+            }
+            
+            // Importer les paramètres
+            if (document.getElementById('import-settings').checked && data.gpsStats) {
+                // Mettre à jour les statistiques GPS
+                gpsErrorCount = data.gpsStats.errorCount || 0;
+                gpsSignalStrength = data.gpsStats.signalStrength || 0;
+                
+                console.log("Paramètres GPS importés:", data.gpsStats);
+            }
+            
+            // Mettre à jour la dernière position si disponible
+            if (data.lastPosition && data.lastPosition.lat && data.lastPosition.lng) {
+                lastPosition = {
+                    lat: parseFloat(data.lastPosition.lat),
+                    lng: parseFloat(data.lastPosition.lng),
+                    accuracy: data.lastPosition.accuracy || 50,
+                    speed: data.lastPosition.speed || 0,
+                    altitude: data.lastPosition.altitude || 0,
+                    heading: data.lastPosition.heading || 0,
+                    timestamp: data.lastPosition.timestamp ? new Date(data.lastPosition.timestamp) : new Date(),
+                    source: 'import'
+                };
+                
+                updatePositionDisplay(lastPosition);
+                updateMapPosition(lastPosition);
+                importedCount++;
+            }
+            
+            // Mettre à jour la distance totale
+            if (data.totalDistance) {
+                totalDistance = parseFloat(data.totalDistance) || 0;
+                document.getElementById('metric-distance').textContent = totalDistance.toFixed(2);
+            }
+            
+            // Fermer le modal
+            closeImportModal();
+            
+            // Afficher le résultat
+            showNotification(`✅ ${importedCount} éléments importés avec succès`, "import");
+            
+            // Recentrer la carte sur les données importées si nécessaire
+            if (positionHistory.length > 0 || savedPositions.length > 0) {
+                setTimeout(() => {
+                    const bounds = getDataBounds();
+                    if (bounds.isValid()) {
+                        map.fitBounds(bounds, { padding: [50, 50] });
+                    }
+                }, 500);
+            }
+        }
+        
+        function getDataBounds() {
+            const bounds = L.latLngBounds();
+            
+            // Ajouter les positions historiques
+            positionHistory.forEach(pos => {
+                bounds.extend([pos.lat, pos.lng]);
+            });
+            
+            // Ajouter les positions sauvegardées
+            savedPositions.forEach(pos => {
+                bounds.extend([pos.lat, pos.lng]);
+            });
+            
+            // Ajouter la dernière position
+            if (lastPosition) {
+                bounds.extend([lastPosition.lat, lastPosition.lng]);
+            }
+            
+            return bounds;
+        }
+        
+        function closeImportModal() {
+            const modal = document.getElementById('import-modal');
+            modal.classList.remove('active');
+        }
+        
+        // =================== FONCTIONS D'EXPORTATION KML ===================
+        
+        function exportToKML() {
+            console.log("📤 Préparation de l'export KML...");
+            
+            // Collecter toutes les données à exporter
+            const kmlData = generateKMLData();
+            
+            // Créer le fichier KML
+            const kmlContent = createKMLContent(kmlData);
+            
+            // Télécharger le fichier
+            downloadKMLFile(kmlContent);
+        }
+        
+        function generateKMLData() {
+            const data = {
+                documentName: "GeoHISTORY Pro - Export",
+                description: "Export des données cartographiques militaires",
+                timestamp: new Date().toISOString(),
+                positions: [],
+                savedMarkers: [],
+                track: [],
+                shapes: []
+            };
+            
+            // Positions sauvegardées
+            savedPositions.forEach((pos, index) => {
+                data.savedMarkers.push({
+                    name: pos.name || `Position ${index + 1}`,
+                    description: `Position sauvegardée le ${pos.timestamp.toLocaleString()}`,
+                    coordinates: [pos.lng, pos.lat],
+                    timestamp: pos.timestamp.toISOString()
+                });
+            });
+            
+            // Historique des positions (track)
+            if (positionHistory.length > 0) {
+                data.track = positionHistory.map(pos => ({
+                    coordinates: [pos.lng, pos.lat],
+                    timestamp: pos.timestamp.toISOString()
+                }));
+            }
+            
+            // Dernière position actuelle
+            if (lastPosition) {
+                data.positions.push({
+                    name: "Position actuelle",
+                    description: `Dernière position enregistrée - Précision: ${lastPosition.accuracy}m`,
+                    coordinates: [lastPosition.lng, lastPosition.lat],
+                    timestamp: lastPosition.timestamp.toISOString(),
+                    accuracy: lastPosition.accuracy
+                });
+            }
+            
+            // Collecter les formes dessinées (simplifié)
+            // Pour une implémentation complète, il faudrait parcourir drawnItems
+            console.log("Formes disponibles pour export KML:", drawnItems.getLayers().length);
+            
+            return data;
+        }
+        
+        function createKMLContent(data) {
+            const timestamp = new Date().toISOString();
+            
+            let kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${data.documentName}</name>
+    <description>${data.description}</description>
+    <Style id="savedMarkerStyle">
+      <IconStyle>
+        <scale>1.2</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/pushpin/ylw-pushpin.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <Style id="currentPositionStyle">
+      <IconStyle>
+        <scale>1.5</scale>
+        <Icon>
+          <href>http://maps.google.com/mapfiles/kml/pushpin/red-pushpin.png</href>
+        </Icon>
+      </IconStyle>
+    </Style>
+    <Style id="trackStyle">
+      <LineStyle>
+        <color>ff0066ff</color>
+        <width>4</width>
+      </LineStyle>
+    </Style>
+`;
+            
+            // Ajouter les marqueurs sauvegardés
+            data.savedMarkers.forEach(marker => {
+                kml += `    <Placemark>
+      <name>${marker.name}</name>
+      <description><![CDATA[${marker.description}]]></description>
+      <styleUrl>#savedMarkerStyle</styleUrl>
+      <Point>
+        <coordinates>${marker.coordinates.join(',')},0</coordinates>
+      </Point>
+      <TimeStamp>
+        <when>${marker.timestamp}</when>
+      </TimeStamp>
+    </Placemark>
+`;
+            });
+            
+            // Ajouter la position actuelle
+            data.positions.forEach(pos => {
+                kml += `    <Placemark>
+      <name>${pos.name}</name>
+      <description><![CDATA[${pos.description}]]></description>
+      <styleUrl>#currentPositionStyle</styleUrl>
+      <Point>
+        <coordinates>${pos.coordinates.join(',')},0</coordinates>
+      </Point>
+      <TimeStamp>
+        <when>${pos.timestamp}</when>
+      </TimeStamp>
+    </Placemark>
+`;
+            });
+            
+            // Ajouter le trajet (track)
+            if (data.track.length > 0) {
+                kml += `    <Placemark>
+      <name>Trajet GPS</name>
+      <description>Historique des positions GPS</description>
+      <styleUrl>#trackStyle</styleUrl>
+      <LineString>
+        <extrude>1</extrude>
+        <tessellate>1</tessellate>
+        <altitudeMode>relativeToGround</altitudeMode>
+        <coordinates>
+`;
+                
+                data.track.forEach(point => {
+                    kml += `          ${point.coordinates.join(',')},0\n`;
+                });
+                
+                kml += `        </coordinates>
+      </LineString>
+    </Placemark>
+`;
+            }
+            
+            // Informations système
+            kml += `    <Placemark>
+      <name>Informations Système</name>
+      <description><![CDATA[
+        <h3>Informations d'export</h3>
+        <p><strong>Système:</strong> GeoHISTORY Pro MIL</p>
+        <p><strong>Date d'export:</strong> ${new Date().toLocaleString()}</p>
+        <p><strong>Positions sauvegardées:</strong> ${data.savedMarkers.length}</p>
+        <p><strong>Points de trajet:</strong> ${data.track.length}</p>
+        <p><strong>Distance totale:</strong> ${totalDistance.toFixed(2)} km</p>
+        <p><strong>Organisation:</strong> FORCES ARMÉES TOGOLAISES</p>
+      ]]></description>
+      <Point>
+        <coordinates>${lastPosition ? lastPosition.lng : 0.8248},${lastPosition ? lastPosition.lat : 8.6195},0</coordinates>
+      </Point>
+    </Placemark>
+`;
+            
+            kml += `  </Document>
+</kml>`;
+            
+            return kml;
+        }
+        
+        function downloadKMLFile(kmlContent) {
+            const filename = `geohistory_export_${new Date().toISOString().slice(0,10)}.kml`;
+            const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            
+            URL.revokeObjectURL(url);
+            
+            showNotification(`✅ Fichier KML exporté: ${filename}`, "export");
+            
+            // Ajouter aux logs
+            console.log(`📁 Fichier KML exporté: ${filename}`);
+            console.log(`📊 Statistiques: ${savedPositions.length} marqueurs, ${positionHistory.length} points de trajet`);
+        }
+        
+        // =================== FONCTIONS D'EXPORTATION JSON ===================
+        
+        function exportDataToJSON() {
+            const data = {
+                positionHistory: positionHistory,
+                lastPosition: lastPosition,
+                totalDistance: totalDistance,
+                savedPositions: savedPositions,
+                timestamp: new Date().toISOString(),
+                gpsStats: {
+                    errorCount: gpsErrorCount,
+                    signalStrength: gpsSignalStrength,
+                    fallbackMode: GPS_CONFIG.fallbackMode,
+                    retryCount: gpsRetryCount,
+                    watchActive: gpsWatchActive
+                },
+                metadata: {
+                    version: "1.0",
+                    system: "GeoHISTORY Pro MIL",
+                    organization: "FORCES ARMÉES TOGOLAISES"
+                }
+            };
+            
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `geohistory_data_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification("✅ Données JSON exportées avec succès", "export");
+        }
+        
+        function exportMeasurements() {
+            const measurements = {
+                distancePoints: distancePoints,
+                multiPoints: multiPoints,
+                timestamp: new Date().toISOString(),
+                metadata: {
+                    type: "measurements",
+                    system: "GeoHISTORY Pro MIL"
+                }
+            };
+            
+            const dataStr = JSON.stringify(measurements, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `measurements_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            
+            showNotification("✅ Mesures exportées avec succès", "export");
+        }
+        
+        // =================== FONCTIONS GPS ===================
+        
         async function checkGPSAvailability() {
             console.log("📡 Vérification de la disponibilité du GPS...");
             
-            // Vérifier si l'API géolocation est disponible
             if (!navigator.geolocation) {
                 console.warn("❌ Geolocation API non supportée par le navigateur");
                 showNotification("⚠️ Votre navigateur ne supporte pas la géolocalisation", "warning");
@@ -1487,7 +2273,6 @@
                 return Promise.reject("Geolocation API not supported");
             }
             
-            // Tester la permission et la disponibilité
             return new Promise((resolve, reject) => {
                 const testOptions = {
                     enableHighAccuracy: false,
@@ -1495,7 +2280,6 @@
                     maximumAge: Infinity
                 };
                 
-                // Tester la géolocalisation
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         console.log("✅ GPS fonctionnel, position obtenue:", position.coords);
@@ -1508,7 +2292,6 @@
                         console.warn("⚠️ GPS test échoué:", error.message);
                         isGpsAvailable = false;
                         
-                        // Vérifier les permissions si disponible
                         if (navigator.permissions && navigator.permissions.query) {
                             navigator.permissions.query({ name: 'geolocation' })
                                 .then((permissionStatus) => {
@@ -1535,13 +2318,11 @@
                                     reject(error);
                                 })
                                 .catch(() => {
-                                    // Fallback pour navigateurs sans support permissions API
                                     isGpsAvailable = true;
                                     document.getElementById('gps-status').textContent = "GPS: PRÊT";
                                     resolve(null);
                                 });
                         } else {
-                            // Fallback pour anciens navigateurs
                             isGpsAvailable = true;
                             document.getElementById('gps-status').textContent = "GPS: PRÊT";
                             resolve(null);
@@ -1552,144 +2333,9 @@
             });
         }
         
-        function initDrawControls() {
-            console.log("🎨 Initialisation des outils de dessin...");
-            
-            // Initialiser les outils de dessin
-            drawControl = new L.Control.Draw({
-                position: 'topleft',
-                draw: {
-                    polygon: {
-                        shapeOptions: {
-                            color: '#006400',
-                            weight: 3,
-                            fillColor: '#228B22',
-                            fillOpacity: 0.2
-                        },
-                        allowIntersection: false,
-                        drawError: {
-                            color: '#DC143C',
-                            timeout: 1000
-                        },
-                        showArea: true,
-                        metric: true
-                    },
-                    polyline: {
-                        shapeOptions: {
-                            color: '#0066FF',
-                            weight: 4,
-                            dashArray: '5, 5'
-                        },
-                        metric: true
-                    },
-                    circle: {
-                        shapeOptions: {
-                            color: '#FF5722',
-                            weight: 3,
-                            fillColor: '#FF5722',
-                            fillOpacity: 0.1
-                        },
-                        metric: true
-                    },
-                    rectangle: {
-                        shapeOptions: {
-                            color: '#8B0000',
-                            weight: 3,
-                            fillColor: '#8B0000',
-                            fillOpacity: 0.1
-                        }
-                    },
-                    marker: {
-                        icon: L.divIcon({
-                            className: 'custom-marker',
-                            html: '<i class="fas fa-map-marker-alt" style="color: #DC143C; font-size: 24px;"></i>',
-                            iconSize: [24, 24],
-                            iconAnchor: [12, 24]
-                        })
-                    }
-                },
-                edit: {
-                    featureGroup: drawnItems,
-                    remove: true
-                }
-            });
-            
-            console.log("✅ Outils de dessin initialisés");
-        }
-        
-        function setupMapEvents() {
-            console.log("🔧 Configuration des événements de la carte...");
-            
-            // Suivi de la souris pour afficher les coordonnées
-            map.on('mousemove', function(e) {
-                document.getElementById('coordinates').textContent = 
-                    `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
-            });
-            
-            // Clic sur la carte pour la mesure
-            map.on('click', function(e) {
-                if (isMeasuring) {
-                    if (multiPointsMode) {
-                        addMultiPoint(e.latlng);
-                    } else {
-                        addDistancePoint(e.latlng);
-                    }
-                } else if (currentDrawMode === 'marker') {
-                    addManualMarker(e.latlng);
-                } else {
-                    showPositionInfo(e.latlng);
-                }
-            });
-            
-            // Événements pour le dessin
-            map.on(L.Draw.Event.CREATED, function(e) {
-                const layer = e.layer;
-                drawnItems.addLayer(layer);
-                
-                // Ajouter un popup avec les informations
-                if (layer instanceof L.Polygon) {
-                    const area = calculatePolygonArea(layer.getLatLngs()[0]);
-                    layer.bindPopup(`Zone: ${(area / 1000000).toFixed(2)} km²`);
-                    showNotification(`Zone créée: ${(area / 1000000).toFixed(2)} km²`, "gps");
-                } else if (layer instanceof L.Polyline) {
-                    const distance = calculatePolylineDistance(layer.getLatLngs());
-                    layer.bindPopup(`Distance: ${distance.toFixed(2)} km`);
-                    showNotification(`Ligne créée: ${distance.toFixed(2)} km`, "gps");
-                } else if (layer instanceof L.Circle) {
-                    const radius = layer.getRadius();
-                    const area = Math.PI * radius * radius;
-                    layer.bindPopup(`Rayon: ${radius.toFixed(0)} m | Surface: ${(area / 1000000).toFixed(2)} km²`);
-                    showNotification(`Cercle créé: rayon ${radius.toFixed(0)} m`, "gps");
-                } else if (layer instanceof L.Rectangle) {
-                    const bounds = layer.getBounds();
-                    const area = calculateRectangleArea(bounds);
-                    layer.bindPopup(`Surface: ${(area / 1000000).toFixed(2)} km²`);
-                    showNotification(`Rectangle créé: ${(area / 1000000).toFixed(2)} km²`, "gps");
-                } else if (layer instanceof L.Marker) {
-                    layer.bindPopup(`Marqueur ajouté`);
-                    showNotification("Marqueur ajouté", "gps");
-                }
-                
-                layer.openPopup();
-            });
-            
-            map.on(L.Draw.Event.EDITED, function(e) {
-                showNotification("Élément modifié", "gps");
-            });
-            
-            map.on(L.Draw.Event.DELETED, function(e) {
-                showNotification("Élément supprimé", "gps");
-            });
-            
-            console.log("✅ Événements de carte configurés");
-        }
-        
-        // =================== SYSTÈME GPS OPTIMISÉ ===================
-        
         function startAutoGPS() {
             console.log("📍 Démarrage du suivi GPS...");
             
-            // Arrêter tout suivi existant
             stopGPSWatch();
             
             if (!isGpsAvailable) {
@@ -1698,7 +2344,6 @@
                 return;
             }
             
-            // Configuration GPS optimisée pour chaque navigateur
             const gpsOptions = {
                 enableHighAccuracy: GPS_CONFIG.highAccuracy,
                 timeout: GPS_CONFIG.timeout,
@@ -1708,7 +2353,6 @@
             console.log("🔧 Configuration GPS:", gpsOptions);
             
             try {
-                // Démarrer le suivi continu
                 positionWatchId = navigator.geolocation.watchPosition(
                     handlePositionSuccess,
                     handleGPSError,
@@ -1720,13 +2364,11 @@
                 
                 console.log("✅ Suivi GPS démarré avec ID:", positionWatchId);
                 
-                // Mettre à jour l'interface
                 document.getElementById('auto-gps').classList.add('active');
                 document.getElementById('location-status').classList.add('active');
                 
                 showNotification("📡 Suivi GPS haute précision activé", "gps");
                 
-                // Tester immédiatement pour obtenir une première position
                 setTimeout(() => {
                     navigator.geolocation.getCurrentPosition(
                         (pos) => {
@@ -1747,7 +2389,6 @@
         }
         
         function handlePositionSuccess(position) {
-            // Réinitialiser le compteur d'erreurs
             gpsErrorCount = 0;
             gpsLastSuccess = new Date();
             
@@ -1758,7 +2399,6 @@
             console.log(`   Précision: ${coords.accuracy ? coords.accuracy.toFixed(0) : 'N/A'}m`);
             console.log(`   Vitesse: ${coords.speed ? (coords.speed * 3.6).toFixed(1) : '0'} km/h`);
             
-            // Vérifier la qualité de la position
             if (GPS_CONFIG.accuracyFilter && coords.accuracy) {
                 if (coords.accuracy > GPS_CONFIG.maxAccuracyThreshold) {
                     console.warn(`⚠️ Position rejetée (précision trop faible: ${coords.accuracy}m)`);
@@ -1766,27 +2406,22 @@
                     return;
                 }
                 
-                // Enregistrer la dernière précision valide
                 if (!lastValidAccuracy || coords.accuracy < lastValidAccuracy) {
                     lastValidAccuracy = coords.accuracy;
                 }
             }
             
-            // Calculer la qualité du signal GPS
             calculateGPSSignalQuality(coords);
             
-            // Lissage des positions si activé
             let processedPosition = coords;
             if (GPS_CONFIG.smoothing) {
                 processedPosition = smoothPosition(coords);
             }
             
-            // Correction de dérive si activée
             if (GPS_CONFIG.driftCorrection && lastPosition) {
                 processedPosition = correctDrift(processedPosition, lastPosition);
             }
             
-            // Créer l'objet position
             const newPosition = {
                 lat: processedPosition.latitude,
                 lng: processedPosition.longitude,
@@ -1800,7 +2435,6 @@
                 source: 'gps'
             };
             
-            // Vérifier si le point est suffisamment éloigné du précédent
             let shouldRecord = true;
             if (lastPosition) {
                 const distance = calculateDistance(
@@ -1808,39 +2442,28 @@
                     newPosition.lat, newPosition.lng
                 );
                 
-                // Enregistrer si mouvement significatif ou précision améliorée
                 shouldRecord = distance >= GPS_CONFIG.minDistance || 
                               (coords.accuracy && lastPosition.accuracy && 
                                coords.accuracy < lastPosition.accuracy * 0.8);
             }
             
             if (shouldRecord) {
-                // Mettre à jour la dernière position
                 lastPosition = newPosition;
                 
-                // Mettre à jour l'affichage
                 updatePositionDisplay(newPosition);
-                
-                // Mettre à jour la carte
                 updateMapPosition(newPosition);
-                
-                // Mettre à jour l'historique
                 updatePositionHistory(newPosition);
                 
-                // Si le suivi automatique est activé, centrer la carte
                 if (autoCenterEnabled && autoTrackingEnabled) {
                     map.setView([newPosition.lat, newPosition.lng], GPS_CONFIG.autoCenterZoom);
                 }
                 
-                // Mettre à jour la distance totale parcourue
                 updateTotalDistance();
                 
-                // Sauvegarder en cache
                 if (GPS_CONFIG.cachePosition) {
                     cachePosition(newPosition);
                 }
                 
-                // Auto-partage WhatsApp
                 if (autoWhatsAppEnabled) {
                     autoSharePosition();
                 }
@@ -1848,7 +2471,6 @@
         }
         
         function smoothPosition(coords) {
-            // Ajouter à la file d'attente
             positionQueue.push({
                 latitude: coords.latitude,
                 longitude: coords.longitude,
@@ -1856,24 +2478,21 @@
                 timestamp: Date.now()
             });
             
-            // Garder seulement les 5 dernières positions
             if (positionQueue.length > 5) {
                 positionQueue.shift();
             }
             
-            // Si moins de 3 points, retourner le dernier
             if (positionQueue.length < 3) {
                 return coords;
             }
             
-            // Calculer la moyenne pondérée
             let totalWeight = 0;
             let latSum = 0;
             let lngSum = 0;
             let accuracySum = 0;
             
             for (let i = 0; i < positionQueue.length; i++) {
-                const weight = (i + 1) / positionQueue.length; // Plus de poids aux positions récentes
+                const weight = (i + 1) / positionQueue.length;
                 totalWeight += weight;
                 
                 latSum += positionQueue[i].latitude * weight;
@@ -1895,26 +2514,23 @@
         }
         
         function correctDrift(currentCoords, lastPosition) {
-            // Correction simple de dérive GPS
-            const MAX_DRIFT_DISTANCE = 100; // mètres
-            const MAX_DRIFT_SPEED = 200; // km/h (vitesse maximale réaliste)
+            const MAX_DRIFT_DISTANCE = 100;
+            const MAX_DRIFT_SPEED = 200;
             
             if (!lastPosition) return currentCoords;
             
             const distance = calculateDistance(
                 lastPosition.lat, lastPosition.lng,
                 currentCoords.latitude, currentCoords.longitude
-            ) * 1000; // Convertir en mètres
+            ) * 1000;
             
-            const timeDiff = (new Date() - lastPosition.timestamp) / 1000; // secondes
-            const speed = (distance / timeDiff) * 3.6; // km/h
+            const timeDiff = (new Date() - lastPosition.timestamp) / 1000;
+            const speed = (distance / timeDiff) * 3.6;
             
-            // Si la vitesse calculée est irréaliste, on suspecte une dérive
             if (speed > MAX_DRIFT_SPEED && distance > MAX_DRIFT_DISTANCE) {
                 console.warn(`⚠️ Dérive GPS détectée: vitesse ${speed.toFixed(0)} km/h`);
                 
-                // Utiliser une interpolation entre l'ancienne et nouvelle position
-                const correctionFactor = 0.3; // 30% de la nouvelle position
+                const correctionFactor = 0.3;
                 
                 return {
                     latitude: lastPosition.lat * (1 - correctionFactor) + currentCoords.latitude * correctionFactor,
@@ -1939,16 +2555,15 @@
             let errorCode = error.code || 0;
             
             switch(errorCode) {
-                case 1: // PERMISSION_DENIED
+                case 1:
                     message = "Permission GPS refusée. Veuillez autoriser l'accès à votre position dans les paramètres de votre navigateur.";
                     isGpsAvailable = false;
                     showNotification(message, "warning");
                     break;
                     
-                case 2: // POSITION_UNAVAILABLE
+                case 2:
                     message = "Position non disponible. Vérifiez que le GPS est activé sur votre appareil et que vous êtes en extérieur.";
                     
-                    // Essayer une configuration plus permissive
                     if (gpsRetryCount < GPS_CONFIG.retryAttempts) {
                         gpsRetryCount++;
                         message += ` Tentative ${gpsRetryCount}/${GPS_CONFIG.retryAttempts}...`;
@@ -1956,17 +2571,16 @@
                         setTimeout(() => {
                             console.log(`🔄 Tentative de reconnexion ${gpsRetryCount}...`);
                             startAutoGPS();
-                        }, 2000 * gpsRetryCount); // Attente exponentielle
+                        }, 2000 * gpsRetryCount);
                     } else {
                         message += " Activation du mode dégradé.";
                         startFallbackMode();
                     }
                     break;
                     
-                case 3: // TIMEOUT
+                case 3:
                     message = "Délai de localisation dépassé. Vérifiez votre connexion internet.";
                     
-                    // Réduire la précision pour la prochaine tentative
                     if (gpsRetryCount < GPS_CONFIG.retryAttempts) {
                         gpsRetryCount++;
                         message += ` Nouvelle tentative (${gpsRetryCount}/${GPS_CONFIG.retryAttempts})...`;
@@ -1982,15 +2596,12 @@
                     message = "Erreur inconnue du GPS. Code: " + errorCode;
             }
             
-            // Mettre à jour l'affichage
             updateGPSErrorDisplay(message, errorCode);
             
-            // Afficher la notification seulement pour les premières erreurs
             if (gpsErrorCount <= 3) {
                 showNotification(message, "warning");
             }
             
-            // Si trop d'erreurs, basculer en mode dégradé
             if (gpsErrorCount >= 10) {
                 console.warn("🚨 Trop d'erreurs GPS, activation du mode dégradé");
                 startFallbackMode();
@@ -2051,7 +2662,6 @@
                 strength = 20;
             }
             
-            // Ajuster en fonction de la vitesse (si en mouvement)
             if (coords.speed && coords.speed > 2) {
                 strength = Math.max(30, strength - 10);
             }
@@ -2104,19 +2714,16 @@
             
             showNotification("Mode dégradé activé - Utilisation des données disponibles", "warning");
             
-            // Essayer la localisation par IP
             if (GPS_CONFIG.useIPLocation) {
                 getIPLocation();
             }
             
-            // Utiliser la position en cache si disponible
             const cachedPos = getCachedPosition();
             if (cachedPos) {
                 console.log("📍 Utilisation de la position en cache");
                 updatePositionDisplay(cachedPos);
                 updateMapPosition(cachedPos);
             } else {
-                // Position par défaut (Togo)
                 fallbackPosition = {
                     lat: 8.6195,
                     lng: 0.8248,
@@ -2136,7 +2743,6 @@
         function getIPLocation() {
             console.log("🌐 Tentative de localisation par IP...");
             
-            // Essayer plusieurs services de géolocalisation IP
             const ipServices = [
                 'https://ipapi.co/json/',
                 'https://ipinfo.io/json',
@@ -2161,7 +2767,7 @@
                             const ipPosition = {
                                 lat: parseFloat(data.latitude),
                                 lng: parseFloat(data.longitude),
-                                accuracy: 5000, // Précision moyenne pour IP
+                                accuracy: 5000,
                                 speed: 0,
                                 altitude: 0,
                                 heading: 0,
@@ -2182,7 +2788,6 @@
                     })
                     .catch(error => {
                         console.warn(`⚠️ Service IP ${index + 1} échoué:`, error.message);
-                        // Essayer le service suivant
                         setTimeout(() => tryService(index + 1), 1000);
                     });
             };
@@ -2214,7 +2819,6 @@
                 const cacheTime = localStorage.getItem('positionCacheTime');
                 if (cacheTime) {
                     const age = Date.now() - parseInt(cacheTime);
-                    // Ne pas utiliser le cache si trop vieux (30 minutes)
                     if (age > 30 * 60 * 1000) {
                         console.log("🗑️ Cache trop vieux, ignoré");
                         return null;
@@ -2262,7 +2866,6 @@
             
             showNotification("Recherche de votre position en cours...", "position");
             
-            // Options optimisées pour la recherche unique
             const options = {
                 enableHighAccuracy: true,
                 timeout: 15000,
@@ -2295,17 +2898,12 @@
             
             console.log(`📍 Mise à jour position: ${lat}, ${lng}, précision: ${accuracy}m`);
             
-            // Mettre à jour le marqueur de position
             updateMyPositionMarker(lat, lng, accuracy, speed, heading);
-            
-            // Mettre à jour les détails dans le panneau
             updateLocationDetails(position.coords, timestamp);
             
-            // Mettre à jour le statut
             document.getElementById('location-status').classList.add('position');
             document.getElementById('gps-status').textContent = `MA POSITION: ±${accuracy ? accuracy.toFixed(0) : '?'}m`;
             
-            // Si le mode suivi est activé, mettre à jour la dernière position
             if (autoTrackingEnabled) {
                 lastPosition = {
                     lat, lng, accuracy, speed, altitude, heading, timestamp
@@ -2315,7 +2913,6 @@
         }
         
         function updateMyPositionMarker(lat, lng, accuracy, speed, heading) {
-            // Supprimer l'ancien marqueur s'il existe
             if (myPositionMarker) {
                 map.removeLayer(myPositionMarker);
             }
@@ -2323,7 +2920,6 @@
                 map.removeLayer(myPositionAccuracyCircle);
             }
             
-            // Créer un nouveau marqueur personnalisé pour ma position
             myPositionMarker = L.marker([lat, lng], {
                 icon: L.divIcon({
                     className: 'my-position-marker',
@@ -2334,10 +2930,8 @@
                 zIndexOffset: 2000
             }).addTo(map);
             
-            // Ajouter un popup informatif
             myPositionMarker.bindPopup(createMyPositionPopup(lat, lng, accuracy, speed, heading));
             
-            // Ajouter un cercle de précision
             if (accuracy) {
                 myPositionAccuracyCircle = L.circle([lat, lng], {
                     radius: accuracy,
@@ -2527,7 +3121,6 @@
             
             if (myPositionMarker) {
                 const latlng = myPositionMarker.getLatLng();
-                // Mettre à jour les détails si disponibles
                 if (lastPosition) {
                     updateLocationDetails(lastPosition, lastPosition.timestamp);
                 }
@@ -2553,7 +3146,6 @@
             savedPositions.push(position);
             savePositionsToStorage();
             
-            // Ajouter un marqueur pour la position sauvegardée
             const savedMarker = L.marker([latlng.lat, latlng.lng], {
                 icon: L.divIcon({
                     className: 'saved-position-marker',
@@ -2605,10 +3197,136 @@
             }
         }
         
-        // =================== FONCTIONS DE CALCUL ===================
+        // =================== AUTRES FONCTIONS ===================
+        
+        function initDrawControls() {
+            console.log("🎨 Initialisation des outils de dessin...");
+            
+            drawControl = new L.Control.Draw({
+                position: 'topleft',
+                draw: {
+                    polygon: {
+                        shapeOptions: {
+                            color: '#006400',
+                            weight: 3,
+                            fillColor: '#228B22',
+                            fillOpacity: 0.2
+                        },
+                        allowIntersection: false,
+                        drawError: {
+                            color: '#DC143C',
+                            timeout: 1000
+                        },
+                        showArea: true,
+                        metric: true
+                    },
+                    polyline: {
+                        shapeOptions: {
+                            color: '#0066FF',
+                            weight: 4,
+                            dashArray: '5, 5'
+                        },
+                        metric: true
+                    },
+                    circle: {
+                        shapeOptions: {
+                            color: '#FF5722',
+                            weight: 3,
+                            fillColor: '#FF5722',
+                            fillOpacity: 0.1
+                        },
+                        metric: true
+                    },
+                    rectangle: {
+                        shapeOptions: {
+                            color: '#8B0000',
+                            weight: 3,
+                            fillColor: '#8B0000',
+                            fillOpacity: 0.1
+                        }
+                    },
+                    marker: {
+                        icon: L.divIcon({
+                            className: 'custom-marker',
+                            html: '<i class="fas fa-map-marker-alt" style="color: #DC143C; font-size: 24px;"></i>',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 24]
+                        })
+                    }
+                },
+                edit: {
+                    featureGroup: drawnItems,
+                    remove: true
+                }
+            });
+            
+            console.log("✅ Outils de dessin initialisés");
+        }
+        
+        function setupMapEvents() {
+            console.log("🔧 Configuration des événements de la carte...");
+            
+            map.on('mousemove', function(e) {
+                document.getElementById('coordinates').textContent = 
+                    `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+            });
+            
+            map.on('click', function(e) {
+                if (isMeasuring) {
+                    if (multiPointsMode) {
+                        addMultiPoint(e.latlng);
+                    } else {
+                        addDistancePoint(e.latlng);
+                    }
+                } else if (currentDrawMode === 'marker') {
+                    addManualMarker(e.latlng);
+                } else {
+                    showPositionInfo(e.latlng);
+                }
+            });
+            
+            map.on(L.Draw.Event.CREATED, function(e) {
+                const layer = e.layer;
+                drawnItems.addLayer(layer);
+                
+                if (layer instanceof L.Polygon) {
+                    const area = calculatePolygonArea(layer.getLatLngs()[0]);
+                    layer.bindPopup(`Zone: ${(area / 1000000).toFixed(2)} km²`);
+                    showNotification(`Zone créée: ${(area / 1000000).toFixed(2)} km²`, "gps");
+                } else if (layer instanceof L.Polyline) {
+                    const distance = calculatePolylineDistance(layer.getLatLngs());
+                    layer.bindPopup(`Distance: ${distance.toFixed(2)} km`);
+                    showNotification(`Ligne créée: ${distance.toFixed(2)} km`, "gps");
+                } else if (layer instanceof L.Circle) {
+                    const radius = layer.getRadius();
+                    const area = Math.PI * radius * radius;
+                    layer.bindPopup(`Rayon: ${radius.toFixed(0)} m | Surface: ${(area / 1000000).toFixed(2)} km²`);
+                    showNotification(`Cercle créé: rayon ${radius.toFixed(0)} m`, "gps");
+                } else if (layer instanceof L.Rectangle) {
+                    const bounds = layer.getBounds();
+                    const area = calculateRectangleArea(bounds);
+                    layer.bindPopup(`Surface: ${(area / 1000000).toFixed(2)} km²`);
+                    showNotification(`Rectangle créé: ${(area / 1000000).toFixed(2)} km²`, "gps");
+                } else if (layer instanceof L.Marker) {
+                    layer.bindPopup(`Marqueur ajouté`);
+                    showNotification("Marqueur ajouté", "gps");
+                }
+                
+                layer.openPopup();
+            });
+            
+            map.on(L.Draw.Event.EDITED, function(e) {
+                showNotification("Élément modifié", "gps");
+            });
+            
+            map.on(L.Draw.Event.DELETED, function(e) {
+                showNotification("Élément supprimé", "gps");
+            });
+            
+            console.log("✅ Événements de carte configurés");
+        }
         
         function calculateDistance(lat1, lon1, lat2, lon2) {
-            // Formule de Haversine pour calculer la distance en km
             const R = 6371;
             const dLat = toRad(lat2 - lat1);
             const dLon = toRad(lon2 - lon1);
@@ -2636,7 +3354,6 @@
         }
         
         function calculatePolygonArea(latlngs) {
-            // Calcul de l'aire d'un polygone (en m²)
             let area = 0;
             const len = latlngs.length;
             
@@ -2655,29 +3372,22 @@
         }
         
         function calculateRectangleArea(bounds) {
-            // Calcul de l'aire d'un rectangle (en m²)
             const ne = bounds.getNorthEast();
             const sw = bounds.getSouthWest();
             
-            // Calculer la distance en degrés
             const latDiff = ne.lat - sw.lat;
             const lngDiff = ne.lng - sw.lng;
             
-            // Convertir en mètres (approximation)
             const latDist = latDiff * 111320;
             const lngDist = lngDiff * 111320 * Math.cos((ne.lat + sw.lat) * Math.PI / 360);
             
             return Math.abs(latDist * lngDist);
         }
         
-        // =================== FONCTIONS DE CALCUL DE DISTANCE ===================
-        
         function addDistancePoint(latlng) {
             if (!distancePoints.pointA) {
-                // Premier point
                 distancePoints.pointA = latlng;
                 
-                // Ajouter un marqueur
                 const marker = L.marker(latlng, {
                     icon: L.divIcon({
                         className: 'distance-marker',
@@ -2689,17 +3399,14 @@
                 
                 distanceMarkers.push(marker);
                 
-                // Mettre à jour l'interface
                 document.getElementById('point-a-input').value = 
                     `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
                 
                 showNotification("Point A défini", "gps");
                 
             } else if (!distancePoints.pointB) {
-                // Deuxième point
                 distancePoints.pointB = latlng;
                 
-                // Ajouter un marqueur
                 const marker = L.marker(latlng, {
                     icon: L.divIcon({
                         className: 'distance-marker',
@@ -2711,17 +3418,14 @@
                 
                 distanceMarkers.push(marker);
                 
-                // Mettre à jour l'interface
                 document.getElementById('point-b-input').value = 
                     `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
                 
-                // Calculer et afficher la distance
                 calculateAndDisplayDistance();
                 
                 showNotification("Point B défini - Distance calculée", "gps");
                 
             } else {
-                // Réinitialiser et recommencer
                 clearDistancePoints();
                 addDistancePoint(latlng);
             }
@@ -2733,16 +3437,13 @@
                 return;
             }
             
-            // Calculer la distance
             const distance = calculateDistance(
                 distancePoints.pointA.lat, distancePoints.pointA.lng,
                 distancePoints.pointB.lat, distancePoints.pointB.lng
             );
             
-            // Afficher la distance
             document.getElementById('distance-value').textContent = `${distance.toFixed(3)} km`;
             
-            // Ajouter une ligne entre les points
             if (distanceLine) {
                 map.removeLayer(distanceLine);
             }
@@ -2754,7 +3455,6 @@
                 opacity: 0.8
             }).addTo(map);
             
-            // Ajouter un label avec la distance
             const midPoint = [
                 (distancePoints.pointA.lat + distancePoints.pointB.lat) / 2,
                 (distancePoints.pointA.lng + distancePoints.pointB.lng) / 2
@@ -2780,7 +3480,6 @@
             
             showNotification("Génération du trajet en cours...", "route");
             
-            // Utiliser l'API OSRM pour générer un trajet
             const url = `https://router.project-osrm.org/route/v1/driving/${distancePoints.pointA.lng},${distancePoints.pointA.lat};${distancePoints.pointB.lng},${distancePoints.pointB.lat}?overview=full&geometries=geojson`;
             
             fetch(url)
@@ -2791,7 +3490,6 @@
                         const distance = (route.distance / 1000).toFixed(2);
                         const duration = Math.floor(route.duration / 60);
                         
-                        // Afficher le trajet
                         if (distanceLine) {
                             map.removeLayer(distanceLine);
                         }
@@ -2805,7 +3503,6 @@
                             lineJoin: 'round'
                         }).addTo(map);
                         
-                        // Mettre à jour les informations
                         document.getElementById('distance-value').textContent = `${distance} km`;
                         document.getElementById('distance-details').innerHTML = `
                             <div>Distance routière: ${distance} km</div>
@@ -2824,7 +3521,6 @@
         }
         
         function clearDistancePoints() {
-            // Supprimer les marqueurs
             distanceMarkers.forEach(marker => {
                 if (marker && map.hasLayer(marker)) {
                     map.removeLayer(marker);
@@ -2832,16 +3528,13 @@
             });
             distanceMarkers = [];
             
-            // Supprimer la ligne
             if (distanceLine && map.hasLayer(distanceLine)) {
                 map.removeLayer(distanceLine);
                 distanceLine = null;
             }
             
-            // Réinitialiser les points
             distancePoints = { pointA: null, pointB: null };
             
-            // Réinitialiser l'interface
             document.getElementById('point-a-input').value = '';
             document.getElementById('point-b-input').value = '';
             document.getElementById('distance-value').textContent = '0.0 km';
@@ -2849,8 +3542,6 @@
             
             showNotification("Points de mesure effacés", "gps");
         }
-        
-        // =================== FONCTIONS POINTS MULTIPLES ===================
         
         function toggleMultiPointsMode() {
             multiPointsMode = !multiPointsMode;
@@ -2869,7 +3560,6 @@
         function addMultiPoint(latlng) {
             multiPoints.push(latlng);
             
-            // Ajouter un marqueur
             const marker = L.marker(latlng, {
                 icon: L.divIcon({
                     className: 'multi-point-marker',
@@ -2881,10 +3571,7 @@
             
             distanceMarkers.push(marker);
             
-            // Mettre à jour la ligne
             updateMultiPointsLine();
-            
-            // Calculer la distance totale
             calculateMultiPointsDistance();
             
             showNotification(`Point ${multiPoints.length} ajouté`, "route");
@@ -2928,7 +3615,6 @@
                 multiPointsLine = null;
             }
             
-            // Supprimer les marqueurs de points multiples
             distanceMarkers.forEach(marker => {
                 if (marker && map.hasLayer(marker)) {
                     map.removeLayer(marker);
@@ -2939,8 +3625,6 @@
             document.getElementById('distance-value').textContent = '0.0 km';
             document.getElementById('distance-details').textContent = 'Distance en ligne droite';
         }
-        
-        // =================== FONCTIONS DE MODIFICATION DE CARTE ===================
         
         function toggleDrawTools() {
             isDrawing = !isDrawing;
@@ -2994,8 +3678,6 @@
             drawnItems.clearLayers();
             showNotification("Tous les dessins ont été effacés", "gps");
         }
-        
-        // =================== FONCTIONS WHATSAPP ===================
         
         function sendWhatsAppPosition() {
             if (!lastPosition) {
@@ -3051,17 +3733,14 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
         }
         
         function autoSharePosition() {
-            // Envoyer automatiquement la position toutes les 5 minutes
             const lastShare = localStorage.getItem('lastAutoShare');
             const now = new Date().getTime();
             
-            if (!lastShare || (now - parseInt(lastShare)) > 300000) { // 5 minutes
+            if (!lastShare || (now - parseInt(lastShare)) > 300000) {
                 sendWhatsAppPosition();
                 localStorage.setItem('lastAutoShare', now.toString());
             }
         }
-        
-        // =================== FONCTIONS D'INTERFACE ===================
         
         function toggleMeasureMode() {
             isMeasuring = !isMeasuring;
@@ -3138,7 +3817,6 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
         }
         
         function updatePositionDisplay(position) {
-            // Mettre à jour le dashboard
             document.getElementById('metric-position').textContent = 
                 `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`;
             document.getElementById('metric-accuracy').textContent = 
@@ -3148,7 +3826,6 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             document.getElementById('metric-distance').textContent = 
                 totalDistance.toFixed(2);
             
-            // Mettre à jour la barre de statut
             const accuracyText = position.accuracy ? `±${position.accuracy.toFixed(0)}m` : "Inconnue";
             const speedText = position.speed ? `${(position.speed * 3.6).toFixed(1)} km/h` : "Stationnaire";
             
@@ -3161,12 +3838,10 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             document.getElementById('coordinates').textContent = 
                 `${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}`;
             
-            // Mettre à jour l'affichage du signal
             updateSignalDisplay();
         }
         
         function updateMapPosition(position) {
-            // Mettre à jour le marqueur de position
             if (currentPositionMarker) {
                 map.removeLayer(currentPositionMarker);
             }
@@ -3180,7 +3855,6 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 })
             }).addTo(map);
             
-            // Mettre à jour le cercle de précision
             if (accuracyCircle) {
                 map.removeLayer(accuracyCircle);
             }
@@ -3255,12 +3929,10 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 positionHistory.shift();
             }
             
-            // Mettre à jour le trajet parcouru
             updatePositionPath();
         }
         
         function updatePositionPath() {
-            // Créer ou mettre à jour le trajet
             const pathPoints = positionHistory.map(p => [p.lat, p.lng]);
             
             if (pathPoints.length > 1) {
@@ -3279,7 +3951,6 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
         }
         
         function showPositionInfo(latlng) {
-            // Créer un popup avec les informations de position
             const popup = L.popup()
                 .setLatLng(latlng)
                 .setContent(`
@@ -3403,57 +4074,7 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 .openOn(map);
         }
         
-        function exportData() {
-            const data = {
-                positionHistory: positionHistory,
-                lastPosition: lastPosition,
-                totalDistance: totalDistance,
-                savedPositions: savedPositions,
-                timestamp: new Date().toISOString(),
-                gpsStats: {
-                    errorCount: gpsErrorCount,
-                    signalStrength: gpsSignalStrength,
-                    fallbackMode: GPS_CONFIG.fallbackMode,
-                    retryCount: gpsRetryCount,
-                    watchActive: gpsWatchActive
-                }
-            };
-            
-            const dataStr = JSON.stringify(data, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `geohistory_data_${new Date().toISOString().slice(0,10)}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
-            showNotification("Données exportées avec succès", "gps");
-        }
-        
-        function exportMeasurements() {
-            const measurements = {
-                distancePoints: distancePoints,
-                multiPoints: multiPoints,
-                timestamp: new Date().toISOString()
-            };
-            
-            const dataStr = JSON.stringify(measurements, null, 2);
-            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-            
-            const exportFileDefaultName = `measurements_${new Date().toISOString().slice(0,10)}.json`;
-            
-            const linkElement = document.createElement('a');
-            linkElement.setAttribute('href', dataUri);
-            linkElement.setAttribute('download', exportFileDefaultName);
-            linkElement.click();
-            
-            showNotification("Mesures exportées avec succès", "route");
-        }
-        
         function updateStatusDisplay() {
-            // Mettre à jour périodiquement l'affichage du statut
             setInterval(() => {
                 if (lastPosition) {
                     const age = new Date() - lastPosition.timestamp;
@@ -3463,10 +4084,8 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                         document.getElementById('gps-status').textContent = "GPS: DERNIÈRE POSITION";
                     }
                     
-                    // Si pas de position depuis plus d'une minute, vérifier l'état
                     if (ageSeconds > 60 && gpsWatchActive) {
                         console.log("⚠️ Pas de position depuis 1 minute, vérification GPS...");
-                        // Tester rapidement le GPS
                         navigator.geolocation.getCurrentPosition(
                             (pos) => {
                                 console.log("✅ GPS toujours fonctionnel");
@@ -3484,22 +4103,16 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
         }
         
         function startInterfaceUpdates() {
-            // Mettre à jour l'interface en temps réel
             setInterval(() => {
                 if (lastPosition) {
-                    // Mettre à jour le marqueur d'animation
                     updateMarkerAnimation(lastPosition);
-                    
-                    // Mettre à jour la distance en temps réel
                     updateTotalDistance();
                 }
             }, 1000);
         }
         
         function updateMarkerAnimation(position) {
-            // Mettre à jour l'animation du marqueur en fonction de la vitesse
             if (currentPositionMarker && position.speed > 0) {
-                // Ajouter une classe pour l'animation de mouvement
                 const markerElement = currentPositionMarker.getElement();
                 if (markerElement) {
                     markerElement.classList.add('moving');
@@ -3514,7 +4127,6 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 return;
             }
             
-            // Calculer la distance totale depuis le début
             let distance = 0;
             for (let i = 1; i < positionHistory.length; i++) {
                 const prev = positionHistory[i-1];
@@ -3533,6 +4145,9 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             
             // Initialiser la carte
             initMilitaryMap();
+            
+            // Configurer l'importation de fichiers
+            setupFileUpload();
             
             // =================== MA POSITION ===================
             document.getElementById('find-my-position').addEventListener('click', findMyPosition);
@@ -3650,9 +4265,14 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 document.getElementById('toggle-measure').classList.remove('active');
             });
             
-            // =================== EXPORT ===================
+            // =================== IMPORT/EXPORT ===================
+            document.getElementById('import-data').addEventListener('click', showImportModal);
+            document.getElementById('export-kml').addEventListener('click', exportToKML);
+            document.getElementById('export-data').addEventListener('click', exportDataToJSON);
             document.getElementById('export-measurements').addEventListener('click', exportMeasurements);
-            document.getElementById('export-data').addEventListener('click', exportData);
+            document.getElementById('close-import').addEventListener('click', closeImportModal);
+            document.getElementById('cancel-import').addEventListener('click', closeImportModal);
+            document.getElementById('confirm-import').addEventListener('click', importDataFromFile);
             
             // =================== CONTRÔLES DE CARTE ===================
             document.getElementById('locate-me').addEventListener('click', centerOnPosition);
@@ -3700,6 +4320,9 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                         break;
                     case 'edit':
                         toggleDrawTools();
+                        break;
+                    case 'import':
+                        showImportModal();
                         break;
                 }
             });
