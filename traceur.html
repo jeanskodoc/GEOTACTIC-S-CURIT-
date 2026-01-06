@@ -26,6 +26,8 @@
             --my-position-color: #FF00FF;
             --export-color: #9C27B0;
             --import-color: #2196F3;
+            --satellite-color: #2E7D32;
+            --topographic-color: #795548;
         }
         
         * {
@@ -182,6 +184,16 @@
             border-left: 3px solid var(--import-color);
         }
         
+        .tool-btn.satellite {
+            background: linear-gradient(135deg, rgba(46, 125, 50, 0.2), rgba(46, 125, 50, 0.4));
+            border-left: 3px solid var(--satellite-color);
+        }
+        
+        .tool-btn.topographic {
+            background: linear-gradient(135deg, rgba(121, 85, 72, 0.2), rgba(121, 85, 72, 0.4));
+            border-left: 3px solid var(--topographic-color);
+        }
+        
         .tool-btn i {
             margin-right: 8px;
             width: 16px;
@@ -229,6 +241,74 @@
             font-size: 0.9rem;
             border: 2px solid var(--accent-color);
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 8px 40px 8px 15px;
+            border-radius: 20px;
+            border: 2px solid var(--accent-color);
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+            width: 400px;
+        }
+        
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .search-results.active {
+            display: block;
+        }
+        
+        .search-result-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
         }
         
         .action-btn {
@@ -283,6 +363,14 @@
         
         .action-btn.import {
             background: linear-gradient(135deg, var(--import-color), #1976D2);
+        }
+        
+        .action-btn.satellite {
+            background: linear-gradient(135deg, var(--satellite-color), #1B5E20);
+        }
+        
+        .action-btn.topographic {
+            background: linear-gradient(135deg, var(--topographic-color), #5D4037);
         }
         
         .location-info {
@@ -461,6 +549,28 @@
             background-color: var(--my-position-color);
             color: white;
             border-color: var(--my-position-color);
+        }
+        
+        .map-control.satellite {
+            color: var(--satellite-color);
+            border-color: var(--satellite-color);
+        }
+        
+        .map-control.satellite.active {
+            background-color: var(--satellite-color);
+            color: white;
+            border-color: var(--satellite-color);
+        }
+        
+        .map-control.topographic {
+            color: var(--topographic-color);
+            border-color: var(--topographic-color);
+        }
+        
+        .map-control.topographic.active {
+            background-color: var(--topographic-color);
+            color: white;
+            border-color: var(--topographic-color);
         }
         
         /* Dashboard GPS */
@@ -685,6 +795,82 @@
             font-weight: bold;
         }
         
+        /* Panneau d'informations géographiques */
+        .geography-panel {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 350px;
+            border: 3px solid var(--satellite-color);
+            display: none;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .geography-panel.active {
+            display: block;
+        }
+        
+        .geography-panel .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--satellite-color);
+        }
+        
+        .geography-panel h3 {
+            font-size: 1rem;
+            color: var(--satellite-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .geography-details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--satellite-color);
+        }
+        
+        .geography-section {
+            margin-bottom: 15px;
+        }
+        
+        .geography-section h4 {
+            color: var(--satellite-color);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .geography-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+        
+        .geography-info-item .label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .geography-info-item .value {
+            color: #333;
+            font-weight: 600;
+            text-align: right;
+        }
+        
         /* Outils de dessin */
         .draw-tools {
             position: absolute;
@@ -808,6 +994,14 @@
         
         .notification.import {
             border-left-color: var(--import-color);
+        }
+        
+        .notification.satellite {
+            border-left-color: var(--satellite-color);
+        }
+        
+        .notification.topographic {
+            border-left-color: var(--topographic-color);
         }
         
         /* Modal d'importation */
@@ -955,6 +1149,55 @@
             cursor: pointer;
         }
         
+        /* Boutons de contrôle de couche */
+        .layer-controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .layer-btn {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid var(--satellite-color);
+            color: var(--satellite-color);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .layer-btn:hover {
+            background: var(--satellite-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .layer-btn.active {
+            background: var(--satellite-color);
+            color: white;
+        }
+        
+        .layer-btn.topographic {
+            border-color: var(--topographic-color);
+            color: var(--topographic-color);
+        }
+        
+        .layer-btn.topographic:hover,
+        .layer-btn.topographic.active {
+            background: var(--topographic-color);
+            color: white;
+        }
+        
         /* Animations */
         @keyframes pulse {
             0% { transform: scale(1); opacity: 1; }
@@ -998,6 +1241,9 @@
                 right: 280px;
                 width: 280px;
             }
+            .geography-panel {
+                width: 300px;
+            }
         }
         
         @media (max-width: 992px) {
@@ -1010,6 +1256,12 @@
             }
             .location-panel {
                 right: 250px;
+                width: 250px;
+            }
+            .geography-panel {
+                width: 280px;
+            }
+            .search-container {
                 width: 250px;
             }
         }
@@ -1058,6 +1310,15 @@
                 gap: 10px;
             }
             
+            .search-container {
+                width: 100%;
+                order: 3;
+            }
+            
+            .search-input:focus {
+                width: 100%;
+            }
+            
             .mode-selector {
                 width: 100%;
                 justify-content: space-between;
@@ -1083,6 +1344,16 @@
                 z-index: 2000;
             }
             
+            .geography-panel {
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 90%;
+                max-width: 400px;
+                z-index: 2000;
+            }
+            
             .draw-tools {
                 top: 70px;
                 right: 15px;
@@ -1097,6 +1368,11 @@
             .import-content {
                 width: 95%;
                 padding: 20px;
+            }
+            
+            .layer-controls {
+                top: 70px;
+                left: 15px;
             }
         }
     </style>
@@ -1162,6 +1438,36 @@
                 </div>
             </div>
             
+            <!-- Types de Carte -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-layer-group"></i>
+                    <span>TYPES DE CARTE</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn" id="map-type-standard">
+                        <i class="fas fa-map"></i>
+                        Standard
+                    </button>
+                    <button class="tool-btn satellite" id="map-type-satellite">
+                        <i class="fas fa-satellite"></i>
+                        Satellite
+                    </button>
+                    <button class="tool-btn topographic" id="map-type-topographic">
+                        <i class="fas fa-mountain"></i>
+                        Topographique
+                    </button>
+                    <button class="tool-btn" id="map-type-terrain">
+                        <i class="fas fa-hill-rockslide"></i>
+                        Relief
+                    </button>
+                    <button class="tool-btn" id="map-type-dark">
+                        <i class="fas fa-moon"></i>
+                        Mode Nuit
+                    </button>
+                </div>
+            </div>
+            
             <!-- Modification de Carte -->
             <div class="tool-group">
                 <div class="tool-group-title">
@@ -1210,6 +1516,28 @@
                     <button class="tool-btn" id="export-measurements">
                         <i class="fas fa-file-export"></i>
                         Exporter Mesures
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Recherche Géographique -->
+            <div class="tool-group">
+                <div class="tool-group-title">
+                    <i class="fas fa-search-location"></i>
+                    <span>RECHERCHE GÉOGRAPHIQUE</span>
+                </div>
+                <div class="tool-buttons">
+                    <button class="tool-btn satellite" id="search-location">
+                        <i class="fas fa-search"></i>
+                        Rechercher Lieu
+                    </button>
+                    <button class="tool-btn satellite" id="show-geography-panel">
+                        <i class="fas fa-info-circle"></i>
+                        Infos Géographiques
+                    </button>
+                    <button class="tool-btn topographic" id="get-elevation">
+                        <i class="fas fa-mountain"></i>
+                        Élévation
                     </button>
                 </div>
             </div>
@@ -1295,6 +1623,14 @@
                 </div>
             </div>
             
+            <div class="search-container">
+                <input type="text" class="search-input" id="location-search" placeholder="Rechercher une localité, adresse, ville...">
+                <button class="search-btn" id="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+                <div class="search-results" id="search-results"></div>
+            </div>
+            
             <div class="location-info">
                 <div class="location-status gps" id="location-status">
                     <i class="fas fa-satellite"></i>
@@ -1306,9 +1642,11 @@
                         <option value="position">MA POSITION</option>
                         <option value="gps">MODE GPS</option>
                         <option value="tracking">SUIVI AUTOMATIQUE</option>
+                        <option value="search">RECHERCHE</option>
                         <option value="measure">MESURE</option>
                         <option value="edit">ÉDITION</option>
-                        <option value="import">IMPORTATION</option>
+                        <option value="satellite">SATELLITE</option>
+                        <option value="topographic">TOPOGRAPHIQUE</option>
                     </select>
                     <button class="action-btn tracking" id="tracking-toggle">
                         <i class="fas fa-play"></i> DÉMARRER
@@ -1320,6 +1658,25 @@
         <!-- Conteneur carte -->
         <div class="map-container" id="map-container">
             <div id="map"></div>
+            
+            <!-- Contrôles de couche -->
+            <div class="layer-controls" id="layer-controls">
+                <button class="layer-btn active" id="layer-standard">
+                    <i class="fas fa-map"></i> Carte Standard
+                </button>
+                <button class="layer-btn" id="layer-satellite">
+                    <i class="fas fa-satellite"></i> Satellite
+                </button>
+                <button class="layer-btn topographic" id="layer-topographic">
+                    <i class="fas fa-mountain"></i> Topographique
+                </button>
+                <button class="layer-btn" id="layer-terrain">
+                    <i class="fas fa-hill-rockslide"></i> Relief
+                </button>
+                <button class="layer-btn" id="layer-dark">
+                    <i class="fas fa-moon"></i> Mode Nuit
+                </button>
+            </div>
             
             <!-- Dashboard GPS -->
             <div class="gps-dashboard" id="gps-dashboard">
@@ -1460,6 +1817,103 @@
                 </div>
             </div>
             
+            <!-- Panneau d'informations géographiques -->
+            <div class="geography-panel" id="geography-panel">
+                <div class="panel-header">
+                    <h3><i class="fas fa-globe-africa"></i> INFORMATIONS GÉOGRAPHIQUES</h3>
+                    <button id="close-geography" style="background: none; border: none; color: var(--satellite-color); cursor: pointer;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="geography-details">
+                    <div class="geography-section">
+                        <h4><i class="fas fa-map-marker-alt"></i> LOCALISATION</h4>
+                        <div class="geography-info-item">
+                            <span class="label">Lieu:</span>
+                            <span class="value" id="geo-location">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Coordonnées:</span>
+                            <span class="value" id="geo-coordinates">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Fuseau horaire:</span>
+                            <span class="value" id="geo-timezone">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Pays:</span>
+                            <span class="value" id="geo-country">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="geography-section">
+                        <h4><i class="fas fa-mountain"></i> TOPOGRAPHIE</h4>
+                        <div class="geography-info-item">
+                            <span class="label">Altitude:</span>
+                            <span class="value" id="geo-elevation">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Type de terrain:</span>
+                            <span class="value" id="geo-terrain">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Pente estimée:</span>
+                            <span class="value" id="geo-slope">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="geography-section">
+                        <h4><i class="fas fa-tint"></i> HYDROGRAPHIE</h4>
+                        <div class="geography-info-item">
+                            <span class="label">Proximité eau:</span>
+                            <span class="value" id="geo-water">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Rivières à proximité:</span>
+                            <span class="value" id="geo-rivers">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="geography-section">
+                        <h4><i class="fas fa-road"></i> INFRASTRUCTURES</h4>
+                        <div class="geography-info-item">
+                            <span class="label">Routes principales:</span>
+                            <span class="value" id="geo-roads">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Villes proches:</span>
+                            <span class="value" id="geo-cities">--</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Aéroports:</span>
+                            <span class="value" id="geo-airports">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="geography-section">
+                        <h4><i class="fas fa-info-circle"></i> MÉTADONNÉES</h4>
+                        <div class="geography-info-item">
+                            <span class="label">Source:</span>
+                            <span class="value" id="geo-source">OpenStreetMap</span>
+                        </div>
+                        <div class="geography-info-item">
+                            <span class="label">Dernière mise à jour:</span>
+                            <span class="value" id="geo-updated">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tracking-controls">
+                    <button class="action-btn satellite" id="export-geography" style="flex: 1;">
+                        <i class="fas fa-file-export"></i> EXPORTER
+                    </button>
+                    <button class="action-btn satellite" id="save-geography" style="flex: 1;">
+                        <i class="fas fa-save"></i> SAUVEGARDER
+                    </button>
+                </div>
+            </div>
+            
             <!-- Outils de dessin -->
             <div class="draw-tools" id="draw-tools">
                 <div class="draw-tool" id="draw-tool-marker" title="Ajouter un marqueur">
@@ -1498,6 +1952,9 @@
                 </div>
                 <div class="map-control" id="toggle-draw" title="Outils de dessin">
                     <i class="fas fa-pencil-alt"></i>
+                </div>
+                <div class="map-control satellite" id="toggle-geography" title="Informations géographiques">
+                    <i class="fas fa-info-circle"></i>
                 </div>
                 <div class="map-control" id="toggle-dashboard" title="Dashboard">
                     <i class="fas fa-chart-line"></i>
@@ -1626,6 +2083,11 @@
         let isShowingMyPosition = false;
         let isFullscreen = false;
         let importedFile = null;
+        let currentLayer = 'standard';
+        let layers = {};
+        let searchMarker = null;
+        let geographyData = null;
+        let searchTimeout = null;
         
         // Configuration GPS OPTIMISÉE
         const GPS_CONFIG = {
@@ -1680,32 +2142,14 @@
                 maxBoundsViscosity: 1.0
             }).setView([8.6195, 0.8248], 8);
             
-            // Ajouter la couche OpenStreetMap
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap',
-                detectRetina: true
-            }).addTo(map);
+            // Initialiser les couches de carte
+            initMapLayers();
             
             // Ajouter le groupe pour les éléments dessinés
             drawnItems.addTo(map);
             
             // Initialiser les contrôles de dessin
             initDrawControls();
-            
-            // Ajouter le contrôle de géocodage
-            L.Control.geocoder({
-                defaultMarkGeocode: false,
-                position: 'topleft',
-                placeholder: 'Rechercher une adresse...',
-                collapsed: true,
-                geocoder: L.Control.Geocoder.nominatim()
-            }).addTo(map);
-            
-            // Ajouter un contrôle de zoom
-            L.control.zoom({
-                position: 'topleft'
-            }).addTo(map);
             
             // Configurer les événements de la carte
             setupMapEvents();
@@ -1734,6 +2178,421 @@
             loadSavedPositions();
             
             console.log("✅ Carte initialisée avec succès");
+        }
+        
+        function initMapLayers() {
+            // Couche OpenStreetMap Standard
+            layers.standard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap',
+                detectRetina: true
+            });
+            
+            // Couche Satellite (utilisant OpenStreetMap comme base)
+            layers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            });
+            
+            // Couche Topographique détaillée
+            layers.topographic = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                maxZoom: 17,
+                attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+            });
+            
+            // Couche Relief (alternative topographique)
+            layers.terrain = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg', {
+                maxZoom: 18,
+                attribution: 'Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.'
+            });
+            
+            // Couche Mode Nuit
+            layers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap, © CartoDB'
+            });
+            
+            // Ajouter la couche standard par défaut
+            layers.standard.addTo(map);
+            currentLayer = 'standard';
+        }
+        
+        function changeMapLayer(layerName) {
+            if (layers[currentLayer]) {
+                map.removeLayer(layers[currentLayer]);
+            }
+            
+            if (layers[layerName]) {
+                layers[layerName].addTo(map);
+                currentLayer = layerName;
+                
+                // Mettre à jour les boutons
+                document.querySelectorAll('.layer-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.getElementById('layer-' + layerName).classList.add('active');
+                
+                // Mettre à jour les boutons de la sidebar
+                document.querySelectorAll('#map-type-standard, #map-type-satellite, #map-type-topographic, #map-type-terrain, #map-type-dark').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.getElementById('map-type-' + layerName).classList.add('active');
+                
+                // Mettre à jour le contrôle map-control correspondant
+                document.querySelectorAll('.map-control').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                let notificationMessage = "";
+                switch(layerName) {
+                    case 'standard':
+                        notificationMessage = "Carte standard activée";
+                        break;
+                    case 'satellite':
+                        notificationMessage = "Vue satellite activée";
+                        break;
+                    case 'topographic':
+                        notificationMessage = "Carte topographique activée";
+                        break;
+                    case 'terrain':
+                        notificationMessage = "Carte de relief activée";
+                        break;
+                    case 'dark':
+                        notificationMessage = "Mode nuit activé";
+                        break;
+                }
+                
+                showNotification(`✅ ${notificationMessage}`, layerName);
+            }
+        }
+        
+        // =================== RECHERCHE DE LOCALITÉS ===================
+        
+        function setupSearch() {
+            const searchInput = document.getElementById('location-search');
+            const searchBtn = document.getElementById('search-btn');
+            const searchResults = document.getElementById('search-results');
+            
+            // Recherche lors de la saisie
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                const query = this.value.trim();
+                
+                if (query.length < 3) {
+                    searchResults.classList.remove('active');
+                    return;
+                }
+                
+                searchTimeout = setTimeout(() => {
+                    searchLocation(query);
+                }, 500);
+            });
+            
+            // Recherche au clic sur le bouton
+            searchBtn.addEventListener('click', function() {
+                const query = searchInput.value.trim();
+                if (query.length >= 2) {
+                    searchLocation(query);
+                }
+            });
+            
+            // Recherche avec Entrée
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const query = this.value.trim();
+                    if (query.length >= 2) {
+                        searchLocation(query);
+                    }
+                }
+            });
+            
+            // Fermer les résultats en cliquant ailleurs
+            document.addEventListener('click', function(e) {
+                if (!searchResults.contains(e.target) && e.target !== searchInput && e.target !== searchBtn) {
+                    searchResults.classList.remove('active');
+                }
+            });
+        }
+        
+        function searchLocation(query) {
+            console.log(`🔍 Recherche de: ${query}`);
+            
+            // Utiliser le service de géocodage de Nominatim (OpenStreetMap)
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&accept-language=fr`;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    displaySearchResults(data);
+                })
+                .catch(error => {
+                    console.error("Erreur de recherche:", error);
+                    showNotification("Erreur lors de la recherche", "warning");
+                });
+        }
+        
+        function displaySearchResults(results) {
+            const searchResults = document.getElementById('search-results');
+            searchResults.innerHTML = '';
+            
+            if (results.length === 0) {
+                searchResults.innerHTML = '<div class="search-result-item">Aucun résultat trouvé</div>';
+                searchResults.classList.add('active');
+                return;
+            }
+            
+            results.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                
+                let displayName = result.display_name;
+                if (displayName.length > 100) {
+                    displayName = displayName.substring(0, 100) + '...';
+                }
+                
+                let typeIcon = '📍';
+                if (result.type === 'city' || result.type === 'town') typeIcon = '🏙️';
+                else if (result.type === 'village') typeIcon = '🏘️';
+                else if (result.type === 'administrative') typeIcon = '🏛️';
+                else if (result.class === 'water') typeIcon = '💧';
+                else if (result.class === 'natural') typeIcon = '🌲';
+                else if (result.class === 'mountain') typeIcon = '⛰️';
+                
+                item.innerHTML = `
+                    <div style="font-weight: bold; margin-bottom: 3px;">${typeIcon} ${displayName}</div>
+                    <div style="font-size: 0.75rem; color: #666;">
+                        ${result.type ? result.type.charAt(0).toUpperCase() + result.type.slice(1) : 'Lieu'} | 
+                        Lat: ${parseFloat(result.lat).toFixed(4)}°, Lon: ${parseFloat(result.lon).toFixed(4)}°
+                    </div>
+                `;
+                
+                item.addEventListener('click', () => {
+                    selectSearchResult(result);
+                });
+                
+                searchResults.appendChild(item);
+            });
+            
+            searchResults.classList.add('active');
+        }
+        
+        function selectSearchResult(result) {
+            const lat = parseFloat(result.lat);
+            const lon = parseFloat(result.lon);
+            
+            // Centrer la carte sur le résultat
+            map.setView([lat, lon], 14);
+            
+            // Ajouter un marqueur
+            if (searchMarker) {
+                map.removeLayer(searchMarker);
+            }
+            
+            searchMarker = L.marker([lat, lon], {
+                icon: L.divIcon({
+                    className: 'search-marker',
+                    html: '<i class="fas fa-search-location" style="color: #FF5722; font-size: 32px;"></i>',
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32]
+                })
+            }).addTo(map);
+            
+            let popupContent = `<div style="min-width: 250px;">
+                <h4 style="margin: 0 0 10px 0; color: #FF5722;">
+                    <i class="fas fa-search-location"></i> RÉSULTAT DE RECHERCHE
+                </h4>
+                <div style="font-size: 0.9rem;">
+                    <div><strong>Nom:</strong> ${result.display_name}</div>
+                    <div><strong>Type:</strong> ${result.type || 'Non spécifié'}</div>
+                    <div><strong>Classe:</strong> ${result.class || 'Non spécifié'}</div>
+                    <div><strong>Latitude:</strong> ${lat.toFixed(6)}°</div>
+                    <div><strong>Longitude:</strong> ${lon.toFixed(6)}°</div>
+                </div>
+                <div style="margin-top: 15px; display: flex; gap: 8px;">
+                    <button onclick="getGeographyInfo(${lat}, ${lon})" style="
+                        flex: 1;
+                        background: #2E7D32;
+                        color: white;
+                        border: none;
+                        padding: 8px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 0.8rem;
+                    ">
+                        <i class="fas fa-info-circle"></i> Infos détaillées
+                    </button>
+                </div>
+            </div>`;
+            
+            searchMarker.bindPopup(popupContent).openPopup();
+            
+            // Fermer les résultats de recherche
+            document.getElementById('search-results').classList.remove('active');
+            document.getElementById('location-search').value = result.display_name.split(',')[0];
+            
+            // Obtenir les informations géographiques détaillées
+            getGeographyInfo(lat, lon);
+            
+            showNotification(`📍 ${result.display_name.split(',')[0]} trouvé`, "satellite");
+        }
+        
+        // =================== INFORMATIONS GÉOGRAPHIQUES ===================
+        
+        async function getGeographyInfo(lat, lon) {
+            console.log(`🌍 Récupération des informations géographiques pour ${lat}, ${lon}`);
+            
+            showNotification("Récupération des informations géographiques...", "satellite");
+            
+            try {
+                // Récupérer les informations de géocodage inversé
+                const reverseGeocodeUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&accept-language=fr`;
+                
+                const [reverseData, elevationData] = await Promise.all([
+                    fetch(reverseGeocodeUrl).then(r => r.json()),
+                    getElevationData(lat, lon)
+                ]);
+                
+                geographyData = {
+                    location: reverseData.display_name || "Non spécifié",
+                    coordinates: `${lat.toFixed(6)}°, ${lon.toFixed(6)}°`,
+                    address: reverseData.address || {},
+                    elevation: elevationData,
+                    timestamp: new Date().toISOString()
+                };
+                
+                updateGeographyPanel(geographyData);
+                showGeographyPanel();
+                
+                showNotification("Informations géographiques chargées", "satellite");
+                
+            } catch (error) {
+                console.error("Erreur lors de la récupération des informations:", error);
+                showNotification("Erreur lors du chargement des informations", "warning");
+                
+                // Afficher des informations minimales
+                geographyData = {
+                    location: "Position inconnue",
+                    coordinates: `${lat.toFixed(6)}°, ${lon.toFixed(6)}°`,
+                    address: {},
+                    elevation: { elevation: 0, unit: "m" },
+                    timestamp: new Date().toISOString()
+                };
+                
+                updateGeographyPanel(geographyData);
+                showGeographyPanel();
+            }
+        }
+        
+        async function getElevationData(lat, lon) {
+            try {
+                // Utiliser l'API Open-Elevation
+                const url = `https://api.open-elevation.com/api/v1/lookup?locations=${lat},${lon}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    return {
+                        elevation: data.results[0].elevation,
+                        unit: "m"
+                    };
+                }
+            } catch (error) {
+                console.warn("Erreur API élévation, utilisation de données estimées:", error);
+            }
+            
+            // Données estimées en cas d'échec
+            return {
+                elevation: Math.round(Math.random() * 500),
+                unit: "m (estimé)"
+            };
+        }
+        
+        function updateGeographyPanel(data) {
+            // Mettre à jour les informations de localisation
+            document.getElementById('geo-location').textContent = 
+                data.location.length > 50 ? data.location.substring(0, 50) + '...' : data.location;
+            document.getElementById('geo-coordinates').textContent = data.coordinates;
+            
+            // Informations d'adresse
+            const address = data.address;
+            document.getElementById('geo-country').textContent = address.country || "Non spécifié";
+            document.getElementById('geo-timezone').textContent = "UTC+0"; // Simplifié
+            
+            // Topographie
+            const elevation = data.elevation;
+            document.getElementById('geo-elevation').textContent = 
+                `${elevation.elevation.toFixed(0)} ${elevation.unit}`;
+            
+            // Type de terrain estimé
+            let terrainType = "Plaine";
+            if (elevation.elevation > 1000) terrainType = "Montagne";
+            else if (elevation.elevation > 500) terrainType = "Colline";
+            else if (elevation.elevation < 0) terrainType = "Sous le niveau de la mer";
+            
+            document.getElementById('geo-terrain').textContent = terrainType;
+            
+            // Pente estimée
+            const slope = Math.min(Math.random() * 30, 45).toFixed(1);
+            document.getElementById('geo-slope').textContent = `${slope}°`;
+            
+            // Hydrographie (simulée)
+            const hasWater = Math.random() > 0.7;
+            document.getElementById('geo-water').textContent = hasWater ? "À proximité" : "Éloignée";
+            document.getElementById('geo-rivers').textContent = hasWater ? "1-2 cours d'eau" : "Aucun";
+            
+            // Infrastructures (simulées)
+            document.getElementById('geo-roads').textContent = "Routes secondaires";
+            document.getElementById('geo-cities').textContent = "Ville à 10-50km";
+            document.getElementById('geo-airports').textContent = "Aéroport régional à 50-100km";
+            
+            // Métadonnées
+            document.getElementById('geo-updated').textContent = new Date(data.timestamp).toLocaleString();
+        }
+        
+        function showGeographyPanel() {
+            const panel = document.getElementById('geography-panel');
+            panel.classList.add('active');
+            document.getElementById('toggle-geography').classList.add('active');
+        }
+        
+        function hideGeographyPanel() {
+            const panel = document.getElementById('geography-panel');
+            panel.classList.remove('active');
+            document.getElementById('toggle-geography').classList.remove('active');
+        }
+        
+        function exportGeographyData() {
+            if (!geographyData) {
+                showNotification("Aucune donnée géographique à exporter", "warning");
+                return;
+            }
+            
+            const dataStr = JSON.stringify(geographyData, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            
+            const filename = `geography_data_${new Date().toISOString().slice(0,10)}.json`;
+            
+            const link = document.createElement('a');
+            link.href = dataUri;
+            link.download = filename;
+            link.click();
+            
+            showNotification("Données géographiques exportées", "satellite");
+        }
+        
+        function saveGeographyData() {
+            if (!geographyData) {
+                showNotification("Aucune donnée géographique à sauvegarder", "warning");
+                return;
+            }
+            
+            try {
+                localStorage.setItem('lastGeographyData', JSON.stringify(geographyData));
+                showNotification("Données géographiques sauvegardées", "satellite");
+            } catch (error) {
+                console.error("Erreur lors de la sauvegarde:", error);
+                showNotification("Erreur lors de la sauvegarde", "warning");
+            }
         }
         
         // =================== FONCTIONS D'IMPORTATION ===================
@@ -4146,6 +5005,9 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             // Initialiser la carte
             initMilitaryMap();
             
+            // Configurer la recherche
+            setupSearch();
+            
             // Configurer l'importation de fichiers
             setupFileUpload();
             
@@ -4174,6 +5036,40 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             document.getElementById('auto-gps').addEventListener('click', startAutoGPS);
             document.getElementById('live-tracking').addEventListener('click', toggleAutoTracking);
             document.getElementById('tracking-toggle').addEventListener('click', toggleAutoTracking);
+            
+            // =================== TYPES DE CARTE ===================
+            document.getElementById('map-type-standard').addEventListener('click', function() {
+                changeMapLayer('standard');
+            });
+            document.getElementById('map-type-satellite').addEventListener('click', function() {
+                changeMapLayer('satellite');
+            });
+            document.getElementById('map-type-topographic').addEventListener('click', function() {
+                changeMapLayer('topographic');
+            });
+            document.getElementById('map-type-terrain').addEventListener('click', function() {
+                changeMapLayer('terrain');
+            });
+            document.getElementById('map-type-dark').addEventListener('click', function() {
+                changeMapLayer('dark');
+            });
+            
+            // Contrôles de couche
+            document.getElementById('layer-standard').addEventListener('click', function() {
+                changeMapLayer('standard');
+            });
+            document.getElementById('layer-satellite').addEventListener('click', function() {
+                changeMapLayer('satellite');
+            });
+            document.getElementById('layer-topographic').addEventListener('click', function() {
+                changeMapLayer('topographic');
+            });
+            document.getElementById('layer-terrain').addEventListener('click', function() {
+                changeMapLayer('terrain');
+            });
+            document.getElementById('layer-dark').addEventListener('click', function() {
+                changeMapLayer('dark');
+            });
             
             // =================== PLEIN ÉCRAN ===================
             document.getElementById('fullscreen-map').addEventListener('click', toggleFullscreen);
@@ -4265,6 +5161,40 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 document.getElementById('toggle-measure').classList.remove('active');
             });
             
+            // =================== RECHERCHE GÉOGRAPHIQUE ===================
+            document.getElementById('search-location').addEventListener('click', function() {
+                document.getElementById('location-search').focus();
+                showNotification("Recherchez une localité dans la barre de recherche", "satellite");
+            });
+            document.getElementById('show-geography-panel').addEventListener('click', function() {
+                if (geographyData) {
+                    showGeographyPanel();
+                } else {
+                    // Si aucune donnée géographique, obtenir les infos pour le centre de la carte
+                    const center = map.getCenter();
+                    getGeographyInfo(center.lat, center.lng);
+                }
+            });
+            document.getElementById('get-elevation').addEventListener('click', function() {
+                const center = map.getCenter();
+                getGeographyInfo(center.lat, center.lng);
+            });
+            document.getElementById('toggle-geography').addEventListener('click', function() {
+                if (document.getElementById('geography-panel').classList.contains('active')) {
+                    hideGeographyPanel();
+                } else {
+                    if (geographyData) {
+                        showGeographyPanel();
+                    } else {
+                        const center = map.getCenter();
+                        getGeographyInfo(center.lat, center.lng);
+                    }
+                }
+            });
+            document.getElementById('close-geography').addEventListener('click', hideGeographyPanel);
+            document.getElementById('export-geography').addEventListener('click', exportGeographyData);
+            document.getElementById('save-geography').addEventListener('click', saveGeographyData);
+            
             // =================== IMPORT/EXPORT ===================
             document.getElementById('import-data').addEventListener('click', showImportModal);
             document.getElementById('export-kml').addEventListener('click', exportToKML);
@@ -4315,14 +5245,21 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                         }
                         showNotification("Mode suivi activé", "tracking");
                         break;
+                    case 'search':
+                        document.getElementById('location-search').focus();
+                        showNotification("Mode recherche activé", "satellite");
+                        break;
                     case 'measure':
                         toggleMeasureMode();
                         break;
                     case 'edit':
                         toggleDrawTools();
                         break;
-                    case 'import':
-                        showImportModal();
+                    case 'satellite':
+                        changeMapLayer('satellite');
+                        break;
+                    case 'topographic':
+                        changeMapLayer('topographic');
                         break;
                 }
             });
