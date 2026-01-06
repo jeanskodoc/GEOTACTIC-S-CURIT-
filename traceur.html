@@ -28,6 +28,7 @@
             --import-color: #2196F3;
             --satellite-color: #2E7D32;
             --topographic-color: #795548;
+            --military-map-color: #4a6741;
         }
         
         * {
@@ -192,6 +193,11 @@
         .tool-btn.topographic {
             background: linear-gradient(135deg, rgba(121, 85, 72, 0.2), rgba(121, 85, 72, 0.4));
             border-left: 3px solid var(--topographic-color);
+        }
+        
+        .tool-btn.military-map {
+            background: linear-gradient(135deg, rgba(74, 103, 65, 0.2), rgba(74, 103, 65, 0.4));
+            border-left: 3px solid var(--military-map-color);
         }
         
         .tool-btn i {
@@ -371,6 +377,10 @@
         
         .action-btn.topographic {
             background: linear-gradient(135deg, var(--topographic-color), #5D4037);
+        }
+        
+        .action-btn.military-map {
+            background: linear-gradient(135deg, var(--military-map-color), #3a5531);
         }
         
         .location-info {
@@ -571,6 +581,17 @@
             background-color: var(--topographic-color);
             color: white;
             border-color: var(--topographic-color);
+        }
+        
+        .map-control.military-map {
+            color: var(--military-map-color);
+            border-color: var(--military-map-color);
+        }
+        
+        .map-control.military-map.active {
+            background-color: var(--military-map-color);
+            color: white;
+            border-color: var(--military-map-color);
         }
         
         /* Dashboard GPS */
@@ -1004,6 +1025,10 @@
             border-left-color: var(--topographic-color);
         }
         
+        .notification.military-map {
+            border-left-color: var(--military-map-color);
+        }
+        
         /* Modal d'importation */
         .import-modal {
             position: fixed;
@@ -1195,6 +1220,17 @@
         .layer-btn.topographic:hover,
         .layer-btn.topographic.active {
             background: var(--topographic-color);
+            color: white;
+        }
+        
+        .layer-btn.military-map {
+            border-color: var(--military-map-color);
+            color: var(--military-map-color);
+        }
+        
+        .layer-btn.military-map:hover,
+        .layer-btn.military-map.active {
+            background: var(--military-map-color);
             color: white;
         }
         
@@ -1453,6 +1489,22 @@
                         <i class="fas fa-satellite"></i>
                         Satellite
                     </button>
+                    <button class="tool-btn topographic" id="map-type-topographic">
+                        <i class="fas fa-mountain"></i>
+                        Topographique
+                    </button>
+                    <button class="tool-btn military-map" id="map-type-military">
+                        <i class="fas fa-chess-board"></i>
+                        Carte Militaire
+                    </button>
+                    <button class="tool-btn" id="map-type-terrain">
+                        <i class="fas fa-hill-rockslide"></i>
+                        Relief
+                    </button>
+                    <button class="tool-btn" id="map-type-dark">
+                        <i class="fas fa-moon"></i>
+                        Mode Nuit
+                    </button>
                 </div>
             </div>
             
@@ -1635,6 +1687,7 @@
                         <option value="edit">ÉDITION</option>
                         <option value="satellite">SATELLITE</option>
                         <option value="topographic">TOPOGRAPHIQUE</option>
+                        <option value="military">MILITAIRE</option>
                     </select>
                     <button class="action-btn tracking" id="tracking-toggle">
                         <i class="fas fa-play"></i> DÉMARRER
@@ -1655,7 +1708,18 @@
                 <button class="layer-btn" id="layer-satellite">
                     <i class="fas fa-satellite"></i> Satellite
                 </button>
-               
+                <button class="layer-btn topographic" id="layer-topographic">
+                    <i class="fas fa-mountain"></i> Topographique
+                </button>
+                <button class="layer-btn military-map" id="layer-military">
+                    <i class="fas fa-chess-board"></i> Carte Militaire
+                </button>
+                <button class="layer-btn" id="layer-terrain">
+                    <i class="fas fa-hill-rockslide"></i> Relief
+                </button>
+                <button class="layer-btn" id="layer-dark">
+                    <i class="fas fa-moon"></i> Mode Nuit
+                </button>
             </div>
             
             <!-- Dashboard GPS -->
@@ -1936,6 +2000,9 @@
                 <div class="map-control satellite" id="toggle-geography" title="Informations géographiques">
                     <i class="fas fa-info-circle"></i>
                 </div>
+                <div class="map-control military-map" id="toggle-military-map" title="Carte militaire">
+                    <i class="fas fa-chess-board"></i>
+                </div>
                 <div class="map-control" id="toggle-dashboard" title="Dashboard">
                     <i class="fas fa-chart-line"></i>
                 </div>
@@ -2122,7 +2189,7 @@
                 maxBoundsViscosity: 1.0
             }).setView([8.6195, 0.8248], 8);
             
-            // Initialiser les couches de carte
+            // Initialiser les couches de carte - CORRECTION ICI
             initMapLayers();
             
             // Ajouter le groupe pour les éléments dessinés
@@ -2161,50 +2228,98 @@
         }
         
         function initMapLayers() {
-            // Couche OpenStreetMap Standard
-            layers.standard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap',
-                detectRetina: true
-            });
+            console.log("🗺️ Initialisation des couches de carte...");
             
-            // Couche Satellite (utilisant OpenStreetMap comme base)
-            layers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                maxZoom: 19,
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            });
-            
-            // Couche Topographique détaillée
-            layers.topographic = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}', {
-                maxZoom: 17,
-                attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
-            });
-            
-            // Couche Relief (alternative topographique)
-            layers.terrain = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}', {
-                maxZoom: 18,
-                attribution: 'Map tiles by Stamen Design, under CC BY 3.0. Data by OpenStreetMap, under ODbL.'
-            });
-            
-            // Couche Mode Nuit
-            layers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap, © CartoDB'
-            });
-            
-            // Ajouter la couche standard par défaut
-            layers.standard.addTo(map);
-            currentLayer = 'standard';
+            try {
+                // Couche OpenStreetMap Standard
+                layers.standard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap',
+                    detectRetina: true
+                });
+                
+                // Couche Satellite (utilisant Esri World Imagery)
+                layers.satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19,
+                    attribution: 'Tiles © Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+                });
+                
+                // Couche Topographique détaillée
+                layers.topographic = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 17,
+                    attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
+                });
+                
+                // NOUVELLE COUCHE : Carte Militaire (Stamen Terrain avec contours)
+                layers.military = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg', {
+                    maxZoom: 18,
+                    attribution: 'Map tiles by Stamen Design, CC BY 3.0 — Map data © OpenStreetMap'
+                });
+                
+                // Couche Relief (alternative topographique)
+                layers.terrain = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain-background/{z}/{x}/{y}.jpg', {
+                    maxZoom: 18,
+                    attribution: 'Map tiles by Stamen Design, CC BY 3.0 — Map data © OpenStreetMap'
+                });
+                
+                // Couche Mode Nuit
+                layers.dark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap, © CartoDB'
+                });
+                
+                // Vérifier que toutes les couches sont correctement créées
+                Object.keys(layers).forEach(layerName => {
+                    if (!layers[layerName]) {
+                        console.error(`❌ Erreur: La couche ${layerName} n'a pas été créée correctement`);
+                    }
+                });
+                
+                // Ajouter la couche standard par défaut
+                if (layers.standard) {
+                    layers.standard.addTo(map);
+                    currentLayer = 'standard';
+                    console.log("✅ Couche standard ajoutée à la carte");
+                } else {
+                    console.error("❌ Impossible d'ajouter la couche standard");
+                }
+                
+                console.log(`✅ ${Object.keys(layers).length} couches de carte initialisées`);
+                
+            } catch (error) {
+                console.error("❌ Erreur lors de l'initialisation des couches:", error);
+                // Fallback vers OpenStreetMap si erreur
+                layers.standard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
+                currentLayer = 'standard';
+            }
         }
         
         function changeMapLayer(layerName) {
-            if (layers[currentLayer]) {
-                map.removeLayer(layers[currentLayer]);
+            console.log(`🔄 Changement de couche vers: ${layerName}`);
+            
+            if (!layers[layerName]) {
+                console.error(`❌ Couche ${layerName} non disponible`);
+                showNotification(`Couche ${layerName} non disponible`, "warning");
+                return;
             }
             
-            if (layers[layerName]) {
+            if (layers[currentLayer]) {
+                try {
+                    map.removeLayer(layers[currentLayer]);
+                    console.log(`➖ Couche ${currentLayer} retirée`);
+                } catch (error) {
+                    console.warn(`⚠️ Impossible de retirer la couche ${currentLayer}:`, error);
+                }
+            }
+            
+            try {
                 layers[layerName].addTo(map);
                 currentLayer = layerName;
+                
+                console.log(`➕ Couche ${layerName} ajoutée`);
                 
                 // Mettre à jour les boutons
                 document.querySelectorAll('.layer-btn').forEach(btn => {
@@ -2213,7 +2328,7 @@
                 document.getElementById('layer-' + layerName).classList.add('active');
                 
                 // Mettre à jour les boutons de la sidebar
-                document.querySelectorAll('#map-type-standard, #map-type-satellite, #map-type-topographic, #map-type-terrain, #map-type-dark').forEach(btn => {
+                document.querySelectorAll('#map-type-standard, #map-type-satellite, #map-type-topographic, #map-type-military, #map-type-terrain, #map-type-dark').forEach(btn => {
                     btn.classList.remove('active');
                 });
                 document.getElementById('map-type-' + layerName).classList.add('active');
@@ -2234,6 +2349,9 @@
                     case 'topographic':
                         notificationMessage = "Carte topographique activée";
                         break;
+                    case 'military':
+                        notificationMessage = "Carte militaire activée - Conçue pour les opérations tactiques";
+                        break;
                     case 'terrain':
                         notificationMessage = "Carte de relief activée";
                         break;
@@ -2242,7 +2360,16 @@
                         break;
                 }
                 
-                showNotification(`✅ ${notificationMessage}`, layerName);
+                showNotification(`✅ ${notificationMessage}`, layerName === 'military' ? 'military-map' : layerName);
+                
+            } catch (error) {
+                console.error(`❌ Erreur lors du changement vers la couche ${layerName}:`, error);
+                showNotification(`Erreur lors du chargement de la carte ${layerName}`, "warning");
+                
+                // Fallback vers la couche standard
+                if (layerName !== 'standard' && layers.standard) {
+                    changeMapLayer('standard');
+                }
             }
         }
         
@@ -5027,6 +5154,9 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             document.getElementById('map-type-topographic').addEventListener('click', function() {
                 changeMapLayer('topographic');
             });
+            document.getElementById('map-type-military').addEventListener('click', function() {
+                changeMapLayer('military');
+            });
             document.getElementById('map-type-terrain').addEventListener('click', function() {
                 changeMapLayer('terrain');
             });
@@ -5044,11 +5174,23 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
             document.getElementById('layer-topographic').addEventListener('click', function() {
                 changeMapLayer('topographic');
             });
+            document.getElementById('layer-military').addEventListener('click', function() {
+                changeMapLayer('military');
+            });
             document.getElementById('layer-terrain').addEventListener('click', function() {
                 changeMapLayer('terrain');
             });
             document.getElementById('layer-dark').addEventListener('click', function() {
                 changeMapLayer('dark');
+            });
+            
+            // Contrôle carte militaire
+            document.getElementById('toggle-military-map').addEventListener('click', function() {
+                if (currentLayer === 'military') {
+                    changeMapLayer('standard');
+                } else {
+                    changeMapLayer('military');
+                }
             });
             
             // =================== PLEIN ÉCRAN ===================
@@ -5240,6 +5382,9 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                         break;
                     case 'topographic':
                         changeMapLayer('topographic');
+                        break;
+                    case 'military':
+                        changeMapLayer('military');
                         break;
                 }
             });
