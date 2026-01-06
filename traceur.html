@@ -933,6 +933,72 @@
             transform: translateY(-2px);
         }
         
+        /* Panneau des types de carte */
+        .map-types-panel {
+            position: absolute;
+            top: 80px;
+            right: 70px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 6px;
+            padding: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            border: 2px solid var(--military-green);
+            min-width: 180px;
+        }
+        
+        .map-types-panel.active {
+            display: flex;
+        }
+        
+        .map-type-btn {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .map-type-btn:hover {
+            background-color: #f5f5f5;
+            transform: translateY(-1px);
+        }
+        
+        .map-type-btn.active {
+            background-color: var(--military-green);
+            color: white;
+            border-color: var(--military-green);
+        }
+        
+        .map-type-btn.satellite {
+            border-left: 3px solid var(--satellite-color);
+        }
+        
+        .map-type-btn.topographic {
+            border-left: 3px solid var(--topographic-color);
+        }
+        
+        .map-type-btn.military-map {
+            border-left: 3px solid var(--military-map-color);
+        }
+        
+        .map-type-btn.terrain {
+            border-left: 3px solid var(--topographic-color);
+        }
+        
+        .map-type-btn.dark {
+            border-left: 3px solid #333;
+        }
+        
         /* Barre d'état militaire */
         .status-bar {
             background: linear-gradient(90deg, #0a2f0a 0%, var(--primary-color) 100%);
@@ -1174,64 +1240,58 @@
             cursor: pointer;
         }
         
-        /* Boutons de contrôle de couche */
-        .layer-controls {
+        /* Barre de contrôle de couche (simplifiée) */
+        .layer-controls-simple {
             position: absolute;
             top: 15px;
             left: 15px;
             z-index: 1000;
             display: flex;
-            flex-direction: column;
             gap: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            border: 2px solid var(--military-green);
         }
         
-        .layer-btn {
-            background: rgba(255, 255, 255, 0.95);
-            border: 2px solid var(--satellite-color);
-            color: var(--satellite-color);
-            padding: 8px 12px;
+        .layer-control-simple {
+            background: white;
+            border: 1px solid #ddd;
             border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: 600;
-            transition: all 0.2s;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--military-green);
+            transition: all 0.2s;
         }
         
-        .layer-btn:hover {
-            background: var(--satellite-color);
-            color: white;
+        .layer-control-simple:hover {
             transform: translateY(-2px);
+            border-color: var(--military-green);
+            color: var(--military-green);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
-        .layer-btn.active {
-            background: var(--satellite-color);
+        .layer-control-simple.active {
+            background-color: var(--military-green);
             color: white;
+            border-color: var(--military-green);
         }
         
-        .layer-btn.topographic {
-            border-color: var(--topographic-color);
-            color: var(--topographic-color);
+        .layer-control-simple.satellite {
+            color: var(--satellite-color);
+            border-color: var(--satellite-color);
         }
         
-        .layer-btn.topographic:hover,
-        .layer-btn.topographic.active {
-            background: var(--topographic-color);
+        .layer-control-simple.satellite.active {
+            background-color: var(--satellite-color);
             color: white;
-        }
-        
-        .layer-btn.military-map {
-            border-color: var(--military-map-color);
-            color: var(--military-map-color);
-        }
-        
-        .layer-btn.military-map:hover,
-        .layer-btn.military-map.active {
-            background: var(--military-map-color);
-            color: white;
+            border-color: var(--satellite-color);
         }
         
         /* Animations */
@@ -1395,6 +1455,11 @@
                 right: 15px;
             }
             
+            .map-types-panel {
+                top: 70px;
+                right: 15px;
+            }
+            
             .gps-dashboard {
                 width: 90%;
                 left: 5%;
@@ -1406,7 +1471,7 @@
                 padding: 20px;
             }
             
-            .layer-controls {
+            .layer-controls-simple {
                 top: 70px;
                 left: 15px;
             }
@@ -1700,24 +1765,37 @@
         <div class="map-container" id="map-container">
             <div id="map"></div>
             
-            <!-- Contrôles de couche -->
-            <div class="layer-controls" id="layer-controls">
-                <button class="layer-btn active" id="layer-standard">
+            <!-- Contrôles de couche simplifiés -->
+            <div class="layer-controls-simple" id="layer-controls-simple">
+                <div class="layer-control-simple active" id="layer-control-standard" title="Carte Standard">
+                    <i class="fas fa-map"></i>
+                </div>
+                <div class="layer-control-simple satellite" id="layer-control-satellite" title="Satellite">
+                    <i class="fas fa-satellite"></i>
+                </div>
+                <div class="layer-control-simple" id="layer-control-types" title="Types de Carte">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+            </div>
+            
+            <!-- Panneau des types de carte -->
+            <div class="map-types-panel" id="map-types-panel">
+                <button class="map-type-btn active" id="map-type-panel-standard">
                     <i class="fas fa-map"></i> Carte Standard
                 </button>
-                <button class="layer-btn" id="layer-satellite">
+                <button class="map-type-btn satellite" id="map-type-panel-satellite">
                     <i class="fas fa-satellite"></i> Satellite
                 </button>
-                <button class="layer-btn topographic" id="layer-topographic">
+                <button class="map-type-btn topographic" id="map-type-panel-topographic">
                     <i class="fas fa-mountain"></i> Topographique
                 </button>
-                <button class="layer-btn military-map" id="layer-military">
+                <button class="map-type-btn military-map" id="map-type-panel-military">
                     <i class="fas fa-chess-board"></i> Carte Militaire
                 </button>
-                <button class="layer-btn" id="layer-terrain">
+                <button class="map-type-btn terrain" id="map-type-panel-terrain">
                     <i class="fas fa-hill-rockslide"></i> Relief
                 </button>
-                <button class="layer-btn" id="layer-dark">
+                <button class="map-type-btn dark" id="map-type-panel-dark">
                     <i class="fas fa-moon"></i> Mode Nuit
                 </button>
             </div>
@@ -2000,8 +2078,8 @@
                 <div class="map-control satellite" id="toggle-geography" title="Informations géographiques">
                     <i class="fas fa-info-circle"></i>
                 </div>
-                <div class="map-control military-map" id="toggle-military-map" title="Carte militaire">
-                    <i class="fas fa-chess-board"></i>
+                <div class="map-control" id="toggle-map-types" title="Types de Carte">
+                    <i class="fas fa-layer-group"></i>
                 </div>
                 <div class="map-control" id="toggle-dashboard" title="Dashboard">
                     <i class="fas fa-chart-line"></i>
@@ -2135,6 +2213,7 @@
         let searchMarker = null;
         let geographyData = null;
         let searchTimeout = null;
+        let mapTypesPanelVisible = false;
         
         // Configuration GPS OPTIMISÉE
         const GPS_CONFIG = {
@@ -2189,7 +2268,7 @@
                 maxBoundsViscosity: 1.0
             }).setView([8.6195, 0.8248], 8);
             
-            // Initialiser les couches de carte - CORRECTION ICI
+            // Initialiser les couches de carte
             initMapLayers();
             
             // Ajouter le groupe pour les éléments dessinés
@@ -2250,7 +2329,7 @@
                     attribution: 'Map data: © OpenStreetMap contributors, SRTM | Map style: © OpenTopoMap (CC-BY-SA)'
                 });
                 
-                // NOUVELLE COUCHE : Carte Militaire (Stamen Terrain avec contours)
+                // Carte Militaire (Stamen Terrain avec contours)
                 layers.military = L.tileLayer('https://stamen-tiles.a.ssl.fastly.net/terrain/{z}/{x}/{y}.jpg', {
                     maxZoom: 18,
                     attribution: 'Map tiles by Stamen Design, CC BY 3.0 — Map data © OpenStreetMap'
@@ -2321,46 +2400,62 @@
                 
                 console.log(`➕ Couche ${layerName} ajoutée`);
                 
-                // Mettre à jour les boutons
-                document.querySelectorAll('.layer-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                document.getElementById('layer-' + layerName).classList.add('active');
-                
                 // Mettre à jour les boutons de la sidebar
                 document.querySelectorAll('#map-type-standard, #map-type-satellite, #map-type-topographic, #map-type-military, #map-type-terrain, #map-type-dark').forEach(btn => {
                     btn.classList.remove('active');
                 });
                 document.getElementById('map-type-' + layerName).classList.add('active');
                 
-                // Mettre à jour le contrôle map-control correspondant
-                document.querySelectorAll('.map-control').forEach(btn => {
+                // Mettre à jour les boutons du panneau des types de carte
+                document.querySelectorAll('.map-type-btn').forEach(btn => {
                     btn.classList.remove('active');
                 });
+                document.getElementById('map-type-panel-' + layerName).classList.add('active');
+                
+                // Mettre à jour les contrôles simplifiés
+                document.querySelectorAll('.layer-control-simple').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                if (layerName === 'standard') {
+                    document.getElementById('layer-control-standard').classList.add('active');
+                } else if (layerName === 'satellite') {
+                    document.getElementById('layer-control-satellite').classList.add('active');
+                }
                 
                 let notificationMessage = "";
+                let notificationType = layerName;
+                
                 switch(layerName) {
                     case 'standard':
                         notificationMessage = "Carte standard activée";
+                        notificationType = "gps";
                         break;
                     case 'satellite':
                         notificationMessage = "Vue satellite activée";
+                        notificationType = "satellite";
                         break;
                     case 'topographic':
                         notificationMessage = "Carte topographique activée";
+                        notificationType = "topographic";
                         break;
                     case 'military':
                         notificationMessage = "Carte militaire activée - Conçue pour les opérations tactiques";
+                        notificationType = "military-map";
                         break;
                     case 'terrain':
                         notificationMessage = "Carte de relief activée";
+                        notificationType = "topographic";
                         break;
                     case 'dark':
                         notificationMessage = "Mode nuit activé";
+                        notificationType = "gps";
                         break;
                 }
                 
-                showNotification(`✅ ${notificationMessage}`, layerName === 'military' ? 'military-map' : layerName);
+                showNotification(`✅ ${notificationMessage}`, notificationType);
+                
+                // Fermer le panneau des types de carte après sélection
+                hideMapTypesPanel();
                 
             } catch (error) {
                 console.error(`❌ Erreur lors du changement vers la couche ${layerName}:`, error);
@@ -2370,6 +2465,32 @@
                 if (layerName !== 'standard' && layers.standard) {
                     changeMapLayer('standard');
                 }
+            }
+        }
+        
+        function showMapTypesPanel() {
+            const panel = document.getElementById('map-types-panel');
+            panel.classList.add('active');
+            mapTypesPanelVisible = true;
+            document.getElementById('toggle-map-types').classList.add('active');
+            
+            // Fermer les autres panneaux
+            hideDrawTools();
+            hideGeographyPanel();
+        }
+        
+        function hideMapTypesPanel() {
+            const panel = document.getElementById('map-types-panel');
+            panel.classList.remove('active');
+            mapTypesPanelVisible = false;
+            document.getElementById('toggle-map-types').classList.remove('active');
+        }
+        
+        function toggleMapTypesPanel() {
+            if (mapTypesPanelVisible) {
+                hideMapTypesPanel();
+            } else {
+                showMapTypesPanel();
             }
         }
         
@@ -2660,6 +2781,10 @@
             const panel = document.getElementById('geography-panel');
             panel.classList.add('active');
             document.getElementById('toggle-geography').classList.add('active');
+            
+            // Fermer les autres panneaux
+            hideMapTypesPanel();
+            hideDrawTools();
         }
         
         function hideGeographyPanel() {
@@ -4238,6 +4363,11 @@
             });
             
             map.on('click', function(e) {
+                // Fermer le panneau des types de carte si on clique ailleurs
+                if (mapTypesPanelVisible) {
+                    hideMapTypesPanel();
+                }
+                
                 if (isMeasuring) {
                     if (multiPointsMode) {
                         addMultiPoint(e.latlng);
@@ -4592,20 +4722,33 @@
             document.getElementById('distance-details').textContent = 'Distance en ligne droite';
         }
         
-        function toggleDrawTools() {
-            isDrawing = !isDrawing;
+        function showDrawTools() {
             const drawTools = document.getElementById('draw-tools');
+            drawTools.classList.add('active');
+            isDrawing = true;
+            document.getElementById('toggle-draw').classList.add('active');
             
+            // Fermer les autres panneaux
+            hideMapTypesPanel();
+            hideGeographyPanel();
+        }
+        
+        function hideDrawTools() {
+            const drawTools = document.getElementById('draw-tools');
+            drawTools.classList.remove('active');
+            isDrawing = false;
+            document.getElementById('toggle-draw').classList.remove('active');
+            map.removeControl(drawControl);
+        }
+        
+        function toggleDrawTools() {
             if (isDrawing) {
-                drawTools.classList.add('active');
-                map.addControl(drawControl);
-                document.getElementById('toggle-draw').classList.add('active');
-                showNotification("Outils de dessin activés", "gps");
-            } else {
-                drawTools.classList.remove('active');
-                map.removeControl(drawControl);
-                document.getElementById('toggle-draw').classList.remove('active');
+                hideDrawTools();
                 showNotification("Outils de dessin désactivés", "gps");
+            } else {
+                showDrawTools();
+                map.addControl(drawControl);
+                showNotification("Outils de dessin activés", "gps");
             }
         }
         
@@ -5164,34 +5307,37 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                 changeMapLayer('dark');
             });
             
-            // Contrôles de couche
-            document.getElementById('layer-standard').addEventListener('click', function() {
+            // Contrôles de couche simplifiés
+            document.getElementById('layer-control-standard').addEventListener('click', function() {
                 changeMapLayer('standard');
             });
-            document.getElementById('layer-satellite').addEventListener('click', function() {
+            document.getElementById('layer-control-satellite').addEventListener('click', function() {
                 changeMapLayer('satellite');
             });
-            document.getElementById('layer-topographic').addEventListener('click', function() {
+            document.getElementById('layer-control-types').addEventListener('click', toggleMapTypesPanel);
+            
+            // Boutons du panneau des types de carte
+            document.getElementById('map-type-panel-standard').addEventListener('click', function() {
+                changeMapLayer('standard');
+            });
+            document.getElementById('map-type-panel-satellite').addEventListener('click', function() {
+                changeMapLayer('satellite');
+            });
+            document.getElementById('map-type-panel-topographic').addEventListener('click', function() {
                 changeMapLayer('topographic');
             });
-            document.getElementById('layer-military').addEventListener('click', function() {
+            document.getElementById('map-type-panel-military').addEventListener('click', function() {
                 changeMapLayer('military');
             });
-            document.getElementById('layer-terrain').addEventListener('click', function() {
+            document.getElementById('map-type-panel-terrain').addEventListener('click', function() {
                 changeMapLayer('terrain');
             });
-            document.getElementById('layer-dark').addEventListener('click', function() {
+            document.getElementById('map-type-panel-dark').addEventListener('click', function() {
                 changeMapLayer('dark');
             });
             
-            // Contrôle carte militaire
-            document.getElementById('toggle-military-map').addEventListener('click', function() {
-                if (currentLayer === 'military') {
-                    changeMapLayer('standard');
-                } else {
-                    changeMapLayer('military');
-                }
-            });
+            // Contrôle carte
+            document.getElementById('toggle-map-types').addEventListener('click', toggleMapTypesPanel);
             
             // =================== PLEIN ÉCRAN ===================
             document.getElementById('fullscreen-map').addEventListener('click', toggleFullscreen);
@@ -5430,6 +5576,13 @@ Généré automatiquement par GeoHISTORY Pro MIL`;
                     document.getElementById('toggle-dashboard').classList.add('active');
                 }
             }
+            
+            // Fermer le panneau des types de carte en cliquant ailleurs sur la carte
+            map.on('click', function() {
+                if (mapTypesPanelVisible) {
+                    hideMapTypesPanel();
+                }
+            });
             
             // Initialisation terminée
             setTimeout(() => {
